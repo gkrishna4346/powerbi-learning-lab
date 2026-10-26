@@ -1,0 +1,1846 @@
+<title>Power BI Learning Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: full-width workbook. A frozen band on top holds the title, the Product and Mode containers
+   and the theme toggle; its second line names the chosen product. Light = grey with navy text, dark = navy with white text; titles in dark orange.
+   Pills: blue = column (slice by it), green = measure / done. */
+:root{
+  --bg:#ECEEF2; --surface:#FFFFFF; --sunk:#E2E6EC; --ink:#0D1F45; --muted:#46557A; --line:#CDD3DE;
+  --band:#DDE2EA; --band-ink:#0D1F45; --band-soft:#3A4A70; --band-line:#C3CAD7;
+  --title:#C2530A;
+  --dim:#2459B8; --dim-bg:#DFE8F8; --mea:#22794A; --mea-bg:#DCEFE3; --accent:#C2530A; --accent-bg:#FBE7D7; --warn:#A93A2A; --warn-bg:#F7E0DB;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+  --r:8px;
+  --gut-l:max(16px, 3vw, env(safe-area-inset-left, 0px));
+  --gut-r:max(16px, 3vw, env(safe-area-inset-right, 0px));
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0A1730; --surface:#10213F; --sunk:#172B4F; --ink:#FFFFFF; --muted:#B9C5DC; --line:#24395F;
+  --band:#071226; --band-ink:#FFFFFF; --band-soft:#C3CDE2; --band-line:#22365A;
+  --title:#FF8A1F;
+  --dim:#7FB0FF; --dim-bg:#1A3260; --mea:#6FD39A; --mea-bg:#163D33; --accent:#FF8A1F; --accent-bg:#3A2410; --warn:#FF9A85; --warn-bg:#40201C; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0A1730; --surface:#10213F; --sunk:#172B4F; --ink:#FFFFFF; --muted:#B9C5DC; --line:#24395F;
+  --band:#071226; --band-ink:#FFFFFF; --band-soft:#C3CDE2; --band-line:#22365A;
+  --title:#FF8A1F;
+  --dim:#7FB0FF; --dim-bg:#1A3260; --mea:#6FD39A; --mea-bg:#163D33; --accent:#FF8A1F; --accent-bg:#3A2410; --warn:#FF9A85; --warn-bg:#40201C; color-scheme:dark; }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;
+  padding-left:max(16px, 3vw, env(safe-area-inset-left, 0px));padding-right:max(16px, 3vw, env(safe-area-inset-right, 0px));}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top, 0px);z-index:10;background:var(--band)}
+.wrap{width:100%;margin:0;padding-block:0 32px;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--sunk);padding:1px 5px;border-radius:4px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+
+/* frozen masthead */
+.masthead{position:sticky;top:env(safe-area-inset-top, 0px);z-index:6;background:var(--band);color:var(--band-ink);
+  margin-left:calc(-1 * var(--gut-l));margin-right:calc(-1 * var(--gut-r));padding-left:var(--gut-l);padding-right:var(--gut-r);
+  border-bottom:1px solid var(--band-line);box-shadow:0 6px 14px -12px rgba(0,0,0,.45)}
+.mh-row{display:flex;align-items:center;gap:14px 18px;flex-wrap:wrap;padding-block:10px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand svg{width:32px;height:32px;flex:none}
+.brand h1{font-size:21px;font-weight:800;letter-spacing:-.01em;white-space:nowrap}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto}
+.ctl{display:flex;align-items:center;gap:8px;border-radius:10px;padding:4px 5px 4px 10px;background:var(--surface);color:var(--ink)}
+.ctl-product{border:2px solid var(--dim)}
+.ctl-mode{border:2px solid var(--mea)}
+.ctl-label{font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:flex;align-items:center;gap:5px}
+.ctl-label svg{width:12px;height:12px}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.spill{border:1.5px solid var(--dim);color:var(--dim);background:transparent;border-radius:999px;padding:3px 12px;font-weight:700;font-size:13px}
+.spill.on{background:var(--dim);color:var(--surface)}
+.spill.m{border-color:var(--mea);color:var(--mea)} .spill.m.on{background:var(--mea);color:var(--surface)}
+.iconbtn{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--band-ink);background:transparent;color:var(--band-ink);display:grid;place-items:center;flex:none}
+.iconbtn svg{width:18px;height:18px}
+.iconbtn:hover{background:var(--surface);color:var(--ink)}
+.mh-sub{display:flex;align-items:baseline;gap:6px 14px;flex-wrap:wrap;padding-block:7px 9px;border-top:1px solid var(--band-line)}
+.mh-sub h2{font-size:19px;font-weight:800}
+.mh-sub p{margin:0;color:var(--band-soft);font-size:14px;flex:1;min-width:240px}
+.mh-sub .stats{font-family:var(--f-mono);font-size:12px;color:var(--band-soft);white-space:nowrap}
+.mh-sub .eyebrow{color:var(--band-soft)}
+
+/* titles and important names */
+.brand h1,.mh-sub h2,.lesson-head h2,.dayhead h2,.body h3,.quiz h3,.sectionlbl h3,.card h3,.lab-h h3,.cc-out h4,.mod > summary,.acc > summary,.titem.cur{color:var(--title)}
+
+/* general layout */
+.general{display:grid;grid-template-columns:clamp(260px,22vw,340px) minmax(0,1fr);gap:18px;align-items:start}
+.pane{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);position:sticky;top:calc(var(--mh, 120px) + 12px);max-height:calc(100vh - var(--mh, 120px) - 24px);display:flex;flex-direction:column;overflow:hidden}
+.pane-head{padding:12px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.pane-head label{font-size:12px;color:var(--muted)}
+.search{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:7px 10px;font:inherit;font-size:14px;color:var(--ink)}
+.toc{overflow:auto;padding:6px 0 12px}
+.mod > summary{list-style:none;cursor:pointer;padding:8px 12px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px}
+.mod > summary::-webkit-details-marker{display:none}
+.mod > summary .caret{transition:transform .15s;color:var(--muted);font-size:10px}
+.mod[open] > summary .caret{transform:rotate(90deg)}
+.mod > summary .cnt{margin-left:auto;font-family:var(--f-mono);font-size:11px;color:var(--muted);font-weight:400}
+.titem{display:flex;gap:8px;align-items:baseline;width:100%;text-align:left;border:0;background:none;padding:5px 12px 5px 30px;font-size:14px;color:var(--ink);border-left:3px solid transparent}
+.titem:hover{background:var(--sunk)}
+.titem.cur{background:var(--dim-bg);border-left-color:var(--dim);font-weight:700}
+.titem .num{font-family:var(--f-mono);font-size:11px;color:var(--muted);width:30px;flex:none}
+.titem .ok{margin-left:auto;color:var(--mea);font-weight:700;flex:none}
+.lesson,.daymain,.dayshelf{scroll-margin-top:calc(var(--mh, 120px) + 12px)}
+.toc-empty{padding:12px;color:var(--muted);font-size:14px}
+.pane-toggle{display:none}
+
+/* lesson */
+.lesson{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:clamp(18px,3vw,36px);min-width:0;display:flex;flex-direction:column;gap:18px}
+.lesson-head{display:flex;flex-direction:column;gap:10px}
+.lesson-head h2{font-size:clamp(24px,3.2vw,34px);font-weight:800;letter-spacing:-.015em}
+.meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tag{font-size:12px;font-weight:700;border-radius:4px;padding:2px 8px;background:var(--sunk);color:var(--muted)}
+.tag.Basic{background:var(--dim-bg);color:var(--dim)} .tag.Intermediate{background:var(--accent-bg);color:var(--accent)} .tag.Advanced{background:var(--warn-bg);color:var(--warn)}
+.learn-btn{margin-left:auto;border:1.5px solid var(--mea);color:var(--mea);background:transparent;border-radius:999px;padding:5px 14px;font-weight:700;font-size:14px}
+.learn-btn.on{background:var(--mea);color:var(--surface)}
+.lead{font-size:19px;line-height:1.5;margin:0}
+.body{display:flex;flex-direction:column;gap:14px}
+.body p{margin:0}
+.body h3{font-size:18px;margin-top:6px}
+.body ul,.body ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+.body ol li::marker{font-family:var(--f-mono);color:var(--dim);font-weight:600}
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{text-align:left;background:var(--sunk);font-weight:700;padding:8px 10px;white-space:nowrap;font-size:13px}
+td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+td:first-child{font-weight:700}
+.note{border-radius:6px;padding:12px 14px;display:flex;gap:10px;font-size:15px}
+.note b.lbl{font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;flex:none;padding-top:3px}
+.note.tip{background:var(--mea-bg)} .note.tip b.lbl{color:var(--mea)}
+.note.warn{background:var(--warn-bg)} .note.warn b.lbl{color:var(--warn)}
+.note.try{background:var(--accent-bg)} .note.try b.lbl{color:var(--accent)}
+pre{margin:0;background:var(--sunk);border-radius:6px;padding:14px;overflow-x:auto;font-family:var(--f-mono);font-size:13px;line-height:1.6}
+.pill{display:inline-block;font-family:var(--f-body);font-size:12.5px;font-weight:700;border-radius:999px;padding:1px 9px;color:var(--surface);white-space:nowrap;margin:1px 0}
+.pill.d{background:var(--dim)} .pill.m{background:var(--mea)}
+
+/* quiz */
+.quiz{border-top:1px dashed var(--line);padding-top:18px;display:flex;flex-direction:column;gap:14px}
+.quiz h3{font-size:18px;display:flex;align-items:center;gap:10px}
+.qcard{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px}
+.qcard p{margin:0;font-weight:700}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.opt{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:8px 12px;font-size:14px}
+.opt:hover:not([disabled]){border-color:var(--dim)}
+.opt[disabled]{cursor:default}
+.opt.right{border-color:var(--mea);background:var(--mea-bg);font-weight:700}
+.opt.wrong{border-color:var(--warn);background:var(--warn-bg)}
+.why{font-size:14px;color:var(--muted)}
+.why b{color:var(--ink)}
+.retry{align-self:flex-start;border:0;background:none;color:var(--dim);font-size:13px;text-decoration:underline;padding:0}
+
+.navrow{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:16px}
+.navbtn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:8px 14px;font-size:14px;max-width:48%;text-align:left}
+.navbtn small{display:block;color:var(--muted);font-size:12px}
+.navbtn:hover{border-color:var(--dim)}
+.navbtn.next{text-align:right;margin-left:auto}
+
+/* labs */
+.lab{border:1.5px solid var(--dim);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--surface)}
+.lab-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lab-h h3{margin:0;font-size:18px}
+.lab-h .tag{background:var(--dim);color:var(--surface)}
+.goals{display:flex;flex-wrap:wrap;gap:6px}
+.goal{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 12px;font-size:13px}
+.goal.on{background:var(--dim);color:var(--surface);border-color:var(--dim);font-weight:700}
+.cc-out{display:grid;grid-template-columns:140px minmax(0,1fr);gap:16px;align-items:start;background:var(--bg);border-radius:6px;padding:14px}
+.cc-out h4{margin:0 0 4px;font-family:var(--f-display);font-size:20px}
+.cc-out p{margin:0 0 6px;font-size:14px}
+.cc-out .lbl{font-family:var(--f-mono);font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:.05em}
+.glyph{width:100%;max-width:140px;height:auto;background:var(--surface);border-radius:6px;border:1px solid var(--line)}
+.glyph .g1{fill:var(--dim)} .glyph .g2{fill:var(--mea)} .glyph .g3{fill:var(--accent)}
+.glyph .gl{fill:none;stroke:var(--dim);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.glyph .gt{stroke:var(--accent);stroke-width:1.5;stroke-dasharray:3 3}
+.glyph .gb{fill:var(--sunk)} .glyph .ax{stroke:var(--line);stroke-width:1}
+.pills-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.pf{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;flex-wrap:wrap}
+.pf .name{font-weight:700;flex:1;min-width:110px}
+.pf button{border:1.5px solid var(--dim);color:var(--dim);background:var(--surface);border-radius:999px;font-size:12px;font-weight:700;padding:2px 10px}
+.pf button.m{border-color:var(--mea);color:var(--mea)}
+.pf.done{background:var(--surface)}
+.pf .res{flex-basis:100%;font-size:13px;color:var(--muted)}
+.pf .res b.ok{color:var(--mea)} .pf .res b.no{color:var(--warn)}
+.score{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+
+/* day plan */
+.dayshelf{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 14px;display:flex;gap:10px;align-items:center;overflow-x:auto}
+.shelf-label{font-family:var(--f-mono);font-size:12px;color:var(--muted);flex:none;display:flex;align-items:center;gap:6px}
+.shelf-label svg{width:14px;height:14px}
+.days{display:flex;gap:6px;flex:none}
+.dpill{border:1.5px solid var(--dim);color:var(--dim);background:transparent;border-radius:999px;padding:4px 12px;font-weight:700;font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.dpill.done{background:var(--mea);border-color:var(--mea);color:var(--surface)}
+.dpill.cur{outline:2px solid var(--accent);outline-offset:2px}
+.dpill.on{background:var(--dim);color:var(--surface)}
+.dpill.done.on{background:var(--mea)}
+.dayview{display:grid;grid-template-columns:minmax(0,1fr) clamp(280px,22vw,360px);gap:18px;align-items:start}
+.daymain{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:clamp(18px,3vw,32px);display:flex;flex-direction:column;gap:18px;min-width:0}
+.dayhead h2{font-size:clamp(24px,3.4vw,36px);font-weight:800;letter-spacing:-.02em;margin-top:4px}
+.dayhead .meta{margin-top:10px}
+.side{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px}
+.card h3{font-size:16px}
+.goals-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.goals-list li{display:flex;gap:8px}
+.goals-list li::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;border:2px solid var(--dim);margin-top:6px}
+.task{background:var(--accent-bg);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:6px}
+.task b.lbl{font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
+.task p{margin:0}
+.acc{border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.acc + .acc{margin-top:-10px}
+.acc > summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;align-items:center;gap:10px;font-weight:700;background:var(--bg)}
+.acc > summary::-webkit-details-marker{display:none}
+.acc > summary .num{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-weight:400}
+.acc > summary .ok{margin-left:auto;color:var(--mea);font-size:13px}
+.acc > summary .caret{color:var(--muted);font-size:10px;transition:transform .15s}
+.acc[open] > summary .caret{transform:rotate(90deg)}
+.acc-body{padding:18px;display:flex;flex-direction:column;gap:14px}
+.acc-body .lesson-head h2{font-size:22px}
+.daybtns{display:flex;gap:10px;flex-wrap:wrap}
+.btn{border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:6px;padding:9px 16px;font-weight:700;font-size:14px}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.done{background:var(--mea);border-color:var(--mea);color:var(--surface)}
+.sectionlbl{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.sectionlbl h3{font-size:20px}
+.pace{font-size:14px;color:var(--muted);margin:0}
+.timeline{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:13px;max-height:420px;overflow:auto}
+.timeline button{display:flex;gap:8px;width:100%;text-align:left;border:0;background:none;padding:5px 6px;border-radius:4px;align-items:baseline}
+.timeline button:hover{background:var(--sunk)}
+.timeline .dn{font-family:var(--f-mono);color:var(--muted);width:44px;flex:none}
+.timeline .on{background:var(--dim-bg);font-weight:700}
+.timeline .ok{margin-left:auto;color:var(--mea)}
+
+footer{color:var(--muted);font-size:17px;display:flex;justify-content:center;text-align:center;border-top:1px solid var(--line);padding-top:16px}
+footer .credit{color:var(--muted)}
+footer .mail{color:var(--title);font-weight:700;user-select:all;word-break:break-all}
+
+/* global search */
+.gsearch{position:relative;flex:0 1 300px;min-width:200px}
+.gsearch svg{position:absolute;left:11px;top:50%;width:15px;height:15px;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.gsearch input{width:100%;border:2px solid var(--accent);background:var(--surface);color:var(--ink);border-radius:10px;padding:7px 34px 7px 32px;font:inherit;font-size:14px}
+.gsearch input::placeholder{color:var(--muted)}
+.gsearch kbd{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-family:var(--f-mono);font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px;background:var(--bg)}
+.gres{position:absolute;top:calc(100% + 6px);right:0;width:min(560px,calc(100vw - 32px));max-height:min(70vh,520px);overflow:auto;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 14px 34px -14px rgba(0,0,0,.45);z-index:8;padding:6px}
+.gres-head{display:flex;justify-content:space-between;gap:8px;padding:6px 8px;font-size:12px;color:var(--muted);font-family:var(--f-mono)}
+.gres-item{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;border:0;background:none;border-radius:6px;padding:8px 10px;border-left:3px solid transparent}
+.gres-item:hover,.gres-item.act{background:var(--dim-bg);border-left-color:var(--dim)}
+.gres-item .gt{font-weight:700;font-size:14px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.gres-item .gp{font-family:var(--f-mono);font-size:11px;color:var(--surface);background:var(--dim);border-radius:4px;padding:0 6px;font-weight:600}
+.gres-item .gm{font-size:12px;color:var(--muted)}
+.gres-item .gs{font-size:13px;color:var(--muted);line-height:1.45}
+.gres mark{background:var(--accent-bg);color:var(--accent);font-weight:700;border-radius:2px;padding:0 1px}
+.gres-empty{padding:14px 10px;color:var(--muted);font-size:14px}
+.lesson.flash{box-shadow:0 0 0 3px var(--accent)}
+
+@media (max-width: 900px){
+  .gsearch{flex:1 1 100%;order:-1}
+  .gres{left:0;right:auto;width:100%}
+  .general{grid-template-columns:1fr}
+  .pane{position:static;max-height:none}
+  .pane-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;border:0;background:none;padding:12px;font-weight:700}
+  .pane:not(.open) .pane-head,.pane:not(.open) .toc{display:none}
+  .dayview{grid-template-columns:1fr}
+  .controls{margin-left:0}
+}
+@media (max-width: 520px){
+  .cc-out{grid-template-columns:1fr}
+  .mh-sub p,.mh-sub .stats{display:none}
+  .ctl-label span{display:none}
+  .navbtn{max-width:100%;width:100%}
+  .navbtn.next{text-align:left}
+  .learn-btn{margin-left:0}
+}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+
+<div class="wrap">
+  <header class="masthead" id="masthead">
+    <div class="mh-row">
+      <div class="brand">
+        <svg viewBox="0 0 34 34" aria-hidden="true"><rect x="3" y="18" width="6" height="13" rx="1.5" fill="var(--dim)"/><rect x="11" y="10" width="6" height="21" rx="1.5" fill="var(--dim)"/><rect x="19" y="4" width="6" height="27" rx="1.5" fill="var(--mea)"/><rect x="27" y="14" width="4" height="17" rx="1.5" fill="var(--accent)"/></svg>
+        <h1>Power BI Learning Lab</h1>
+      </div>
+      <div class="controls">
+        <div class="gsearch" role="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="gsearch" type="search" autocomplete="off" placeholder="Search all topics" aria-label="Search all topics in every track" aria-controls="gres" aria-expanded="false">
+          <kbd id="gkbd" aria-hidden="true">/</kbd>
+          <div class="gres" id="gres" hidden></div>
+        </div>
+        <div class="ctl ctl-product" role="group" aria-label="Product">
+          <span class="ctl-label"><svg viewBox="0 0 12 12" aria-hidden="true"><rect x="0" y="1" width="3" height="10" fill="var(--dim)"/><rect x="4.5" y="1" width="3" height="10" fill="var(--dim)"/><rect x="9" y="1" width="3" height="10" fill="var(--dim)"/></svg><span>Product</span></span>
+          <div class="seg" id="productPills"></div>
+        </div>
+        <div class="ctl ctl-mode" role="group" aria-label="Mode">
+          <span class="ctl-label"><svg viewBox="0 0 12 12" aria-hidden="true"><rect x="0" y="0" width="12" height="3" fill="var(--mea)"/><rect x="0" y="4.5" width="12" height="3" fill="var(--mea)"/><rect x="0" y="9" width="12" height="3" fill="var(--mea)"/></svg><span>Mode</span></span>
+          <div class="seg" id="modePills"></div>
+        </div>
+        <button type="button" class="iconbtn" id="restartBtn" title="Start over" aria-label="Start over from the beginning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button>
+        <button type="button" class="iconbtn" id="themeBtn" aria-label="Switch theme"></button>
+      </div>
+    </div>
+    <div class="mh-sub" id="intro"></div>
+  </header>
+
+  <main id="view"></main>
+
+  <footer>
+    <span class="credit">Built by Gopikrishna | <span class="mail">gkrishna.69800@gmail.com</span></span>
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+   COURSE CONTENT
+   Block types: p, h, ul, ol, tbl{h,r}, tip, warn, try, code, lab
+   Inline: **bold**, `code`, [[Field|d]] blue pill, [[Field|m]] green pill
+   ============================================================ */
+const COURSES = {
+powerbi: {
+name: "Power BI",
+products: {
+
+/* ------------------------------------------------------------ DESKTOP */
+desktop: {
+label: "Power BI Desktop",
+short: "Desktop",
+blurb: "The free authoring app. Connect to data, shape it, model it with DAX, build report pages and publish them.",
+modules: [
+{ t: "Good to know", topics: [
+{ id:"b-family", t:"The Power BI product family", lvl:"Basic", min:6,
+  lead:"Power BI is a family of tools. Knowing which one does what removes most day-one confusion.",
+  b:[
+   {tbl:{h:["Product","What it does","Access"],r:[
+    ["Power BI Desktop","Main authoring app for Windows. Connect, transform, model and build reports.","Free download"],
+    ["Power BI Service","The cloud site (app.powerbi.com) to publish, share, refresh and secure content.","Free, Pro, Premium Per User or Fabric capacity"],
+    ["Power Query","The data-shaping engine inside Desktop, Excel and dataflows.","Built in"],
+    ["Power BI Mobile","App for viewing reports and dashboards on phones and tablets.","Free app, needs the Service"],
+    ["Power BI Report Builder","Designs paginated (pixel-perfect, printable) reports.","Free download"],
+    ["Power BI Report Server","On-premises server for organisations that can't use the cloud.","Licensed separately"],
+    ["Microsoft Fabric","The wider analytics platform Power BI now lives inside (lakehouses, warehouses, pipelines).","Fabric capacity"]]}},
+   {tip:"A typical workflow: **Power Query** cleans the data → **Desktop** builds the model and report → **Service** shares and refreshes it → **Mobile** shows it on the go."},
+   {warn:"Desktop runs on Windows only. Mac users run it in a Windows virtual machine or edit reports in the browser on the Service."}
+  ],
+  q:[{q:"Which tool designs pixel-perfect, printable reports?",o:["Power BI Desktop","Power BI Report Builder","Power BI Mobile","Power Query"],a:1,w:"Report Builder creates paginated reports (.rdl)."},
+     {q:"Where do you share a report with colleagues and schedule its refresh?",o:["Power BI Service","Power Query Editor","Report Builder","Excel"],a:0,w:"Sharing, security and scheduled refresh happen in the Service."}]},
+
+{ id:"b-ui", t:"Tour of the workspace", lvl:"Basic", min:10,
+  lead:"Desktop has several views on the left edge and a set of panes on the right. Learn the names now; every tutorial uses them.",
+  b:[
+   {h:"Views (left edge)"},
+   {tbl:{h:["View","Used for"],r:[
+    ["Report view","Build pages of visuals on the canvas"],
+    ["Table view","Look at the rows of each table, create calculated columns"],
+    ["Model view","Arrange tables and draw relationships"],
+    ["DAX query view","Write and run DAX queries to test measures"],
+    ["TMDL view","Edit the model as code (Tabular Model Definition Language)"]]}},
+   {h:"Report view"},
+   {tbl:{h:["Area","Where","Used for"],r:[
+    ["Ribbon","Top","Home, Insert, Modeling, View, Optimize, Help and contextual tabs"],
+    ["Canvas","Centre","Where visuals are placed"],
+    ["Page tabs","Bottom","Add, rename, duplicate and hide report pages"],
+    ["Filters pane","Right","Filters on this visual, this page or all pages"],
+    ["Visualizations pane","Right","Pick a visual, fill its field wells, format it, add analytics"],
+    ["Data pane","Far right","Tables, columns, measures and hierarchies"],
+    ["View → panes","Ribbon","Bookmarks, Selection, Sync slicers, Performance analyzer"]]}},
+   {try:"Open Desktop, choose **Blank report**, then on the canvas click **Try a sample semantic model → Load sample data** and tick the **financials** table. Point at each area in the table above."}
+  ],
+  q:[{q:"Where do you draw a relationship between two tables?",o:["Report view","Model view","Filters pane","Page tabs"],a:1,w:"Model view shows tables as boxes you connect."},
+     {q:"Where do you switch a visual from a bar chart to a line chart?",o:["Visualizations pane","Data pane","Table view","Selection pane"],a:0,w:"Select the visual, then click another icon in the Visualizations pane."}]},
+
+{ id:"b-ext", t:"File types & extensions", lvl:"Basic", min:8,
+  lead:"Each Power BI file type tells you what travels with it: the data, the model, or only the design.",
+  b:[
+   {tbl:{h:["Extension","Name","What is inside","Use it when"],r:[
+    ["`.pbix`","Report file","Report pages, model, DAX, Power Query steps **and the imported data**","Everyday work, publishing"],
+    ["`.pbit`","Template","Pages, model and queries but **no data**; asks for parameters on open","Reusing a design on new data"],
+    ["`.pbip`","Power BI Project","A folder of text files (report + semantic model) instead of one binary","Source control with Git"],
+    ["`.pbids`","Data source file","Connection details only","Giving people a ready connection"],
+    ["`.pbiviz`","Custom visual","A packaged visual from AppSource or your own build","Adding visuals not in the box"],
+    ["`.json`","Report theme","Colors, fonts and default formatting","Applying brand styling"],
+    ["`.rdl`","Paginated report","Report Builder layout","Printable invoices and lists"],
+    ["`.tmdl`","Model definition","The semantic model as readable text","Code-first model editing"]]}},
+   {tip:"Save as **.pbit** (File → Export → Power BI template) when you want a clean starting point without anyone's data inside."},
+   {warn:"A `.pbix` can be large and contains the data. Don't email it outside your organisation unless the data may travel."}
+  ],
+  q:[{q:"You want to share a report design without any data inside. Which format?",o:[".pbix",".pbit",".pbids",".pbiviz"],a:1,w:"A template (.pbit) keeps the design and queries but no data."},
+     {q:"Which format suits Git version control best?",o:[".pbix",".pbip",".rdl",".pbiviz"],a:1,w:"A Power BI Project saves the report and model as text files that diff cleanly."}]},
+
+{ id:"b-sources", t:"What data you can bring in", lvl:"Basic", min:8,
+  lead:"Get data reads files, databases, cloud services and other Power BI models. Start with files; the same steps work everywhere.",
+  b:[
+   {tbl:{h:["Category","Examples","Notes"],r:[
+    ["Excel","`.xlsx`, `.xls`, `.xlsm`","Sheets, tables and named ranges appear in the Navigator"],
+    ["Text / CSV","`.csv`, `.txt`","Check delimiter, encoding and that headers were promoted"],
+    ["Folder / SharePoint folder","Many files of the same shape","Combine Files stacks them into one table"],
+    ["Other files","JSON, XML, PDF, Parquet","PDF tables are detected page by page"],
+    ["Databases","SQL Server, PostgreSQL, MySQL, Oracle, Snowflake, Databricks, BigQuery","Choose Import or DirectQuery"],
+    ["Microsoft cloud","SharePoint lists, Dataverse, Fabric lakehouse and warehouse, OneLake catalog","Sign in with your work account"],
+    ["Power BI semantic models","Models published to the Service","Live connection: reuse a certified model"],
+    ["Web & feeds","Web page, OData, REST APIs","Web pages: pick the detected HTML table"],
+    ["Enter data","Type or paste a small table","Good for lookup lists and targets"]]}},
+   {tip:"For Excel: format each range as a table (Ctrl+T), one header row, no merged cells, no totals rows. Clean tables load cleanly."}
+  ],
+  q:[{q:"Twelve monthly CSVs with identical columns sit in one folder. Which connector?",o:["Text/CSV twelve times","Folder, then Combine Files","Enter data","Web"],a:1,w:"The Folder connector combines every file into one table and picks up new files on refresh."}]},
+
+{ id:"b-storage", t:"Import, DirectQuery & other modes", lvl:"Basic", min:8,
+  lead:"Storage mode decides whether data is copied into the model or queried at the source each time.",
+  b:[
+   {tbl:{h:["Mode","How it works","Good for","Trade-off"],r:[
+    ["Import","Copies data into the compressed model","Speed, full DAX and Power Query","Data is only as fresh as the last refresh"],
+    ["DirectQuery","Sends a query to the source for every visual","Very large or near-real-time data","Slower visuals, some DAX and transforms limited"],
+    ["Dual","Table acts as Import or DirectQuery as needed","Shared dimension tables in composite models","More to manage"],
+    ["Live connection","Connects to a published semantic model or Analysis Services","One trusted model, many reports","You can't change the model's queries"],
+    ["Direct Lake","Reads Delta tables in OneLake directly (Fabric)","Huge Fabric data without import refresh","Needs Fabric capacity"]]}},
+   {p:"Set the mode when connecting to a database, or later in Model view: select a table → Properties → Advanced → **Storage mode**."},
+   {tip:"Default to **Import**. Move to DirectQuery only when data is too big or must be up to the minute."}
+  ],
+  q:[{q:"Your data is 2 million rows in Excel and you want fast visuals. Mode?",o:["Import","DirectQuery","Live connection","Direct Lake"],a:0,w:"Import is the fastest and most flexible for file data."}]},
+
+{ id:"b-vocab", t:"Tables, columns, measures & grain", lvl:"Basic", min:8,
+  lead:"A small vocabulary covers most of Power BI. Learn these terms and Microsoft documentation becomes easy to read.",
+  b:[
+   {tbl:{h:["Term","Meaning","Example"],r:[
+    ["Semantic model","Tables, relationships and measures behind a report (formerly called a dataset)","Sales model"],
+    ["Table","A set of rows loaded into the model","financials, Date, Product"],
+    ["Column","One field of a table","Country, Sales"],
+    ["Measure","A DAX formula evaluated for each cell of a visual","Total Sales"],
+    ["Fact table","Holds events and numbers; many rows","Sales lines"],
+    ["Dimension table","Describes things you slice by; fewer rows","Product, Customer, Date"],
+    ["Grain","What one row of a table represents","One product on one order"],
+    ["Visual","One chart, table, card or slicer on a page","Clustered bar chart"],
+    ["Report / page","A file of visuals spread over pages","Sales Overview report"],
+    ["Dashboard","A single Service canvas of pinned tiles","Executive dashboard"],
+    ["Filter context","The filters active for one value in a visual","Country = France, Year = 2024"]]}},
+   {tip:"Before you build anything, ask **what is one row?** Most wrong totals come from misreading the grain."}
+  ],
+  q:[{q:"Which table type usually has the most rows?",o:["Fact table","Dimension table","Date table","Parameter table"],a:0,w:"Fact tables record events, so they grow fastest."}]},
+
+{ id:"b-types", t:"Data types & their icons", lvl:"Basic", min:6,
+  lead:"Every column has a data type. The type controls which functions, sorts and visuals work.",
+  b:[
+   {tbl:{h:["Type","Examples","Notes"],r:[
+    ["Whole number","Units Sold, Year","No decimals"],
+    ["Decimal number","Discount 0.15","Floating point"],
+    ["Fixed decimal number","Sales, Profit","Four decimal places; best for money"],
+    ["Date / Date/Time / Time","Order Date","Use Date when there's no time of day"],
+    ["Text","Country, Product","Shown with no Σ"],
+    ["True/False","Is Returned","Boolean"]]}},
+   {ul:["**Σ** next to a numeric column means it will be summarized when dropped in a visual.","A **calculator** icon marks a measure.","A **globe** marks a column with a geographic data category.","Change a type in Power Query (column header icon) or in **Column tools → Data type**."]},
+   {warn:"Dates stored as text sort alphabetically (Apr, Aug, Dec…) and break time intelligence. Convert them to Date in Power Query."}
+  ],
+  q:[{q:"Which type is recommended for currency values?",o:["Text","Fixed decimal number","True/False","Time"],a:1,w:"Fixed decimal avoids floating-point rounding surprises in money."}]},
+
+{ id:"b-colmeas", t:"Columns vs Measures", lvl:"Basic", min:10,
+  lead:"Columns hold a value for each row and are used to slice. Measures are calculated on the fly for each cell of a visual. This one idea explains most of Power BI.",
+  b:[
+   {tbl:{h:["","Column (incl. calculated column)","Measure"],r:[
+    ["Computed","Once per row, at refresh","At query time, per visual cell"],
+    ["Stored","Yes, takes memory","No, only the formula"],
+    ["Used on","Axes, legends, slicers, rows of a matrix","Values, cards, tooltips"],
+    ["Responds to slicers","Values never change","Recalculates for each filter"],
+    ["Example","[[Country|d]] [[Age Band|d]]","[[Total Sales|m]] [[Profit %|m]]"]]}},
+   {ul:["Rule of thumb: if you need to **slice or filter by it**, make a column. If you need to **aggregate it**, make a measure.","Prefer measures; they keep the model small and react to filters.","Build calculated columns in Power Query when possible; it compresses better."]},
+   {lab:"pills"}
+  ],
+  q:[{q:"You need a slicer of 'Price tier' (Low/Mid/High) per product. Column or measure?",o:["Column","Measure"],a:0,w:"Slicers need a column: each product row gets a tier."},
+     {q:"You need 'Profit %' that changes with every slicer selection. Column or measure?",o:["Column","Measure"],a:1,w:"Ratios over filtered data must be measures."}]},
+
+{ id:"b-implicit", t:"Implicit vs explicit measures", lvl:"Basic", min:7,
+  lead:"Drag a numeric column into a visual and Power BI sums it for you. That shortcut is an implicit measure. Writing it yourself makes it explicit.",
+  b:[
+   {tbl:{h:["","Implicit","Explicit"],r:[
+    ["Created by","Dropping a Σ column on a visual","Home → New measure (DAX)"],
+    ["Reusable","No, lives in one visual","Yes, everywhere in the model"],
+    ["Used by other measures","No","Yes"],
+    ["Works with calculation groups","No","Yes"]]}},
+   {ul:["Change an implicit aggregation: click the arrow on the field in the well → Sum, Average, Count, Count (Distinct), Minimum, Maximum, Median…","Set a column's default: select it → **Column tools → Summarization**. Choose **Don't summarize** for IDs and years.","Year shows as a sum (e.g. 40,350)? Set it to Don't summarize."]},
+   {tip:"Good habit: write an explicit measure for every number you show, and hide the raw columns."}
+  ],
+  q:[{q:"Year appears as 12,108 on your axis. Fix?",o:["Set Summarization to Don't summarize","Change type to Text","Delete the column","Use DirectQuery"],a:0,w:"The year column was being summed. Don't summarize stops that."}]},
+
+{ id:"b-agg", t:"Aggregation functions", lvl:"Basic", min:7,
+  lead:"A measure rolls many rows into one number per cell. The function you choose decides how.",
+  b:[
+   {tbl:{h:["Function","Returns","Use when"],r:[
+    ["SUM","Total of a column","Sales, units"],
+    ["AVERAGE","Mean of rows","Average line value"],
+    ["MEDIAN","Middle value","Skewed values such as salaries"],
+    ["MIN / MAX","Smallest / largest","First order date, biggest discount"],
+    ["COUNT","Non-blank values in a column","Rows with a value"],
+    ["COUNTROWS","Rows in a table","Number of orders"],
+    ["DISTINCTCOUNT","Unique values","Number of customers"],
+    ["SUMX / AVERAGEX","Evaluates an expression per row, then aggregates","Units × Price per row"]]}},
+   {code:`Total Sales = SUM ( financials[Sales] )
+Orders = COUNTROWS ( financials )
+Countries = DISTINCTCOUNT ( financials[Country] )`}
+  ],
+  q:[{q:"How many unique customers bought something?",o:["COUNT(Sales[CustomerKey])","DISTINCTCOUNT(Sales[CustomerKey])","SUM(Sales[CustomerKey])","MAX(Sales[CustomerKey])"],a:1,w:"DISTINCTCOUNT counts unique values."}]}
+]},
+
+{ t: "Visual types", topics: [
+{ id:"b-chartmap", t:"Which visual for which data", lvl:"Basic", min:12,
+  lead:"Start from the question you are answering. The right visual follows from it.",
+  b:[
+   {lab:"chart"},
+   {tbl:{h:["Question","Best visual","Avoid"],r:[
+    ["Compare categories","Sorted clustered bar","Pie with many slices"],
+    ["Change over time","Line; area for volume","Columns for long daily series"],
+    ["Part-to-whole","Stacked bar, treemap; donut only for 2–5 parts","Many tiny slices"],
+    ["What drove a change","Waterfall, decomposition tree","A plain table"],
+    ["Relationship between two measures","Scatter with trend line","Two unrelated lines"],
+    ["Location","Azure Maps bubble or filled layer","Filled shapes of raw totals"],
+    ["Single headline number","Card or KPI","A one-bar chart"],
+    ["Exact lookup","Matrix or table with conditional formatting","Charts when people need the number"],
+    ["Actual vs target","KPI visual, bar with a target line","Gauges everywhere"],
+    ["Two measures, different scales","Line and clustered column chart","Unlabelled secondary axis"]]}}
+  ],
+  q:[{q:"Your manager asks how monthly revenue changed over 3 years. Best visual?",o:["Pie","Line chart","Treemap","Card"],a:1,w:"Lines show trends over time."},
+     {q:"You want to show how opening profit becomes closing profit through gains and losses. Best visual?",o:["Waterfall","Donut","Scatter","Slicer"],a:0,w:"A waterfall shows each step up or down."}]},
+
+{ id:"b-visuals", t:"The Visualizations pane", lvl:"Basic", min:6,
+  lead:"One pane builds, formats and enriches every visual. Learn its three tabs.",
+  b:[
+   {tbl:{h:["Tab","What it holds"],r:[
+    ["Build visual","Visual icons plus field wells: X-axis, Y-axis, Legend, Values, Tooltips, Small multiples, Drill through"],
+    ["Format visual","Visual settings (axes, data labels, colors) and General settings (title, effects, header icons)"],
+    ["Analytics","Reference lines, trend line, forecast, error bars, anomalies"]]}},
+   {ol:["Click empty canvas, then a visual icon to add an empty visual.","Or tick fields in the Data pane; Power BI picks a visual for you.","Drag fields into the wells to control what goes where.","Click **…** (Get more visuals) to add custom visuals from AppSource."]},
+   {tip:"Power BI's automatic choice is a starting point. Switch the visual type yourself and compare."}
+  ],
+  q:[{q:"Where do you turn on data labels?",o:["Format visual tab","Analytics tab","Data pane","Model view"],a:0,w:"Data labels are a formatting option on the visual."}]},
+
+{ id:"b-recipes", t:"Visual build recipes", lvl:"Intermediate", min:20,
+  lead:"Field-well recipes for the visuals you'll build most, using the financials sample table.",
+  b:[
+   {tbl:{h:["Visual","Axis / Category","Values","Other wells"],r:[
+    ["Clustered bar","Y-axis: [[Country|d]]","X-axis: [[Sales|m]]","Sort by Sales descending"],
+    ["Line","X-axis: [[Date|d]] (hierarchy)","Y-axis: [[Sales|m]]","Drill to Month"],
+    ["Stacked column","X-axis: [[Country|d]]","Y-axis: [[Sales|m]]","Legend: Segment"],
+    ["Line and clustered column","X-axis: [[Month Name|d]]","Column y: [[Sales|m]] · Line y: [[Profit|m]]","Sort Month Name by Month Number"],
+    ["Scatter","Values: [[Country|d]]","X: [[Sales|m]] · Y: [[Profit|m]]","Size: Units Sold"],
+    ["Donut","Legend: [[Segment|d]]","Values: [[Sales|m]]","Keep to 5 slices or fewer"],
+    ["Treemap","Category: [[Product|d]]","Values: [[Sales|m]]","Details: Segment"],
+    ["Matrix","Rows: [[Country|d]] · Columns: [[Segment|d]]","Values: [[Sales|m]]","Cell elements → background color"],
+    ["Card","—","Fields: [[Total Sales|m]]","Callout value formatting"],
+    ["KPI","Trend axis: [[Date|d]]","Value: [[Sales|m]]","Target: a target measure"],
+    ["Waterfall","Category: [[Month Name|d]]","Y-axis: [[Profit|m]]","Breakdown: Product"],
+    ["Slicer","Field: [[Segment|d]]","—","Style: tile, dropdown or list"],
+    ["Decomposition tree","Explain by: [[Country|d]] [[Product|d]]","Analyze: [[Sales|m]]","Click + to split"],
+    ["Azure Maps","Location: [[Country|d]]","Size: [[Sales|m]]","Bubble or filled layer"]]}},
+   {try:"Rebuild five of these on five report pages. Name each page after its visual."}
+  ],
+  q:[{q:"For a scatter plot with one dot per country, Country goes in…",o:["Values","X-axis","Legend","Tooltips"],a:0,w:"The Values well splits the scatter into one point per item."}]}
+]},
+
+{ t: "Connect & model data", topics: [
+{ id:"b-connect", t:"Connect to Excel or CSV", lvl:"Basic", min:8,
+  lead:"Your first data load. Most real projects start with a spreadsheet.",
+  b:[
+   {ol:["**Home → Get data → Excel workbook** (or **Text/CSV**).","Pick the file. The **Navigator** lists its sheets and tables.","Tick the table you need and read the preview.","Click **Transform Data** to clean first (recommended), or **Load** to load as is.","In Power Query, check headers and the type icon on each column.","**Home → Close & Apply** loads the result into the model."]},
+   {tip:"Prefer Excel **tables** over sheets in the Navigator. Tables keep their shape when rows are added."}
+  ],
+  q:[{q:"Your sheet needs fixing before loading. In the Navigator you click…",o:["Transform Data","Load","Cancel","Refresh"],a:0,w:"Transform Data opens Power Query so you can clean first."}]},
+
+{ id:"b-pq", t:"Quick cleaning in Power Query", lvl:"Basic", min:10,
+  lead:"Power Query records each fix as a step, so the same cleaning runs again on every refresh.",
+  b:[
+   {ul:["**Use First Row as Headers**: Home or Transform tab.","**Change type**: click the icon on the column header.","**Remove columns**: select → Delete, or Choose Columns.","**Replace values**: right-click column → Replace Values.","**Split column**: by delimiter or number of characters.","**Unpivot**: select the ID columns → Unpivot Other Columns.","**Remove rows**: top rows, blank rows, duplicates, errors.","Every action appears in **Applied Steps**; click one to see the data at that point."]},
+   {tip:"Wide data (one column per month) is hard to chart. Unpivot it to long data: Month and Value columns. The Power Query track covers this in depth."}
+  ],
+  q:[{q:"Your data has columns Jan, Feb, Mar… Dec. Before charting a trend you…",o:["Unpivot","Split","Merge","Group by"],a:0,w:"Unpivot turns month columns into rows."}]},
+
+{ id:"b-model", t:"Star schema & Model view", lvl:"Intermediate", min:10,
+  lead:"Power BI works best with a star schema: one fact table in the middle, dimension tables around it.",
+  b:[
+   {ul:["**Fact table**: numbers and keys (Sales with DateKey, ProductKey, CustomerKey).","**Dimension tables**: descriptions (Product, Customer, Date) with one row per key.","Relationships run from each dimension (one side) to the fact (many side).","Filters flow from dimensions to the fact: pick a Product category, the Sales rows follow.","Avoid one huge flat table and avoid chains of snowflaked tables where you can."]},
+   {tbl:{h:["Model view tool","Used for"],r:[
+    ["Drag a column onto another","Create a relationship"],
+    ["Properties pane","Rename, hide, set data category, storage mode"],
+    ["Layouts tabs","Diagram views of parts of a big model"],
+    ["Display folders","Group measures in the Data pane"]]}},
+   {tip:"Create an empty table called _Measures (Enter data) and keep all measures there."}
+  ],
+  q:[{q:"In a star schema, filters usually flow…",o:["From dimension tables to the fact table","From the fact to dimensions","Only between dimensions","Nowhere"],a:0,w:"Dimension filters travel along one-to-many relationships to the fact."}]},
+
+{ id:"b-rel", t:"Relationships", lvl:"Intermediate", min:12,
+  lead:"A relationship tells Power BI how rows in two tables match, and which way filters travel.",
+  b:[
+   {tbl:{h:["Setting","Options","Advice"],r:[
+    ["Cardinality","One-to-many, One-to-one, Many-to-many","One-to-many from dimension to fact is the norm"],
+    ["Cross filter direction","Single, Both","Single by default; Both only when you need it"],
+    ["Active","Active / inactive","Only one active path between two tables"]]}},
+   {ol:["Model view: drag Product[ProductKey] onto Sales[ProductKey].","Double-click the line to edit cardinality and direction.","An inactive relationship (dashed line) can be used in one measure with USERELATIONSHIP."]},
+   {code:`Sales by Ship Date =
+CALCULATE (
+    [Total Sales],
+    USERELATIONSHIP ( Sales[ShipDateKey], 'Date'[DateKey] )
+)`},
+   {warn:"Bidirectional filters and many-to-many relationships can create ambiguous paths and wrong totals. Use them deliberately."}
+  ],
+  q:[{q:"Sales has OrderDate and ShipDate, both linked to Date. Only one line can be active. How do you use the other?",o:["USERELATIONSHIP in a measure","Delete the Date table","Make both directions Both","Use DirectQuery"],a:0,w:"USERELATIONSHIP turns on the inactive relationship inside one calculation."}]},
+
+{ id:"b-merge", t:"Merge queries (joins)", lvl:"Intermediate", min:10,
+  lead:"Merge glues two queries side by side using matching key columns, inside Power Query.",
+  b:[
+   {tbl:{h:["Join kind","Keeps"],r:[
+    ["Left outer","All rows of the first table plus matches from the second"],
+    ["Right outer","All rows of the second plus matches from the first"],
+    ["Full outer","All rows from both"],
+    ["Inner","Only matching rows"],
+    ["Left anti","Rows of the first table with no match"],
+    ["Right anti","Rows of the second table with no match"]]}},
+   {ol:["Power Query: select the first query → **Home → Merge Queries** (or Merge as New).","Pick the second query and click the key column in each.","Choose the join kind; read the match count at the bottom.","Click the expand icon on the new column and pick the fields to bring in."]},
+   {tip:"Often you don't need a merge at all: load both tables and relate them in Model view instead."}
+  ],
+  q:[{q:"List orders that have no matching customer record (Orders first). Join kind?",o:["Left anti","Inner","Full outer","Right outer"],a:0,w:"Left anti returns rows of the first table with no match."}]},
+
+{ id:"b-append", t:"Append queries (stack rows)", lvl:"Intermediate", min:8,
+  lead:"Append stacks tables with the same columns on top of each other: January + February + March.",
+  b:[
+   {ol:["Power Query: **Home → Append Queries** (or Append as New).","Choose Two tables or Three or more tables.","Columns are matched by name; unmatched names become extra columns with blanks."]},
+   {h:"Folder connector"},
+   {ol:["**Get data → Folder** and pick the folder.","Click **Combine & Transform Data** and choose a sample file.","Power Query builds helper queries and stacks every file; a Source.Name column says which file each row came from.","Drop a new file into the folder and click Refresh."]},
+   {tip:"Rename mismatched headers before appending, or the data splits into two half-empty columns."}
+  ],
+  q:[{q:"Three sheets with identical columns should become one table. Use…",o:["Append","Merge","Relationship","Group by"],a:0,w:"Same columns, more rows: append."}]},
+
+{ id:"b-composite", t:"Composite models & multiple sources", lvl:"Advanced", min:10,
+  lead:"One model can mix sources and storage modes, so you don't have to copy everything into one place.",
+  b:[
+   {ul:["Load an Excel targets file and a SQL Server sales table into one model, then relate them.","Mix Import and DirectQuery tables: a **composite model**.","Set shared dimension tables to **Dual** so they can serve either side quickly.","Connect live to a published semantic model, then click **Make changes to this model** to add your own tables (DirectQuery for Power BI semantic models)."]},
+   {tbl:{h:["Need","Use"],r:[["Related tables, any source","Relationships in Model view"],["Row-level combine before loading","Merge in Power Query"],["Same columns, more rows","Append in Power Query"],["Extend a shared published model","Composite model on the semantic model"]]}},
+   {warn:"Relationships between different source groups are limited relationships. Check totals carefully and keep keys clean."}
+  ],
+  q:[{q:"Which storage mode suits a Date table shared by Import and DirectQuery facts?",o:["Dual","Import only","DirectQuery only","Live"],a:0,w:"Dual lets the table act as either, avoiding slow cross-source joins."}]},
+
+{ id:"b-datetable", t:"The Date table", lvl:"Intermediate", min:10,
+  lead:"Time intelligence needs a proper date table: one row per day, no gaps, marked as a date table.",
+  b:[
+   {code:`Date =
+ADDCOLUMNS (
+    CALENDAR ( DATE ( 2022, 1, 1 ), DATE ( 2026, 12, 31 ) ),
+    "Year", YEAR ( [Date] ),
+    "Month Number", MONTH ( [Date] ),
+    "Month", FORMAT ( [Date], "MMM" ),
+    "Quarter", "Q" & QUARTER ( [Date] )
+)`},
+   {ol:["**Modeling → New table** and paste the formula (or use CALENDARAUTO()).","Select the table → **Table tools → Mark as date table** → pick the Date column.","Sort Month by Month Number: select Month → **Column tools → Sort by column**.","Relate Date[Date] to your fact table's date column."]},
+   {tip:"Turn off **File → Options and settings → Options → Current file → Data Load → Auto date/time** once you have your own date table. It removes hidden tables and shrinks the file."}
+  ],
+  q:[{q:"Months sort Apr, Aug, Dec… How do you fix it?",o:["Sort by column: Month Number","Change type to Date","Use a slicer","Delete the column"],a:0,w:"Sort by column orders text months by their number."}]}
+]},
+
+{ t: "Build visuals", topics: [
+{ id:"b-firstviz", t:"Your first visual in 60 seconds", lvl:"Basic", min:8,
+  lead:"From blank canvas to a labelled chart using the built-in financials sample.",
+  b:[
+   {ol:["Blank report → **Load sample data** → tick **financials** → Load.","Click the **Clustered bar chart** icon in the Visualizations pane.","Drag [[Country|d]] to **Y-axis** and [[Sales|m]] to **X-axis**.","Drag [[Segment|d]] to **Legend**.","Click **…** on the visual → **Sort axis → Sum of Sales**, descending.","Format visual → turn on **Data labels**.","Double-click the page tab and rename it 'Sales by Country'.","Press Ctrl+S and save the .pbix."]},
+   {try:"Switch the visual to a **Stacked column chart** with one click and compare which reads better."}
+  ],
+  q:[{q:"Where is the option to sort a visual by its values?",o:["The visual's … (More options) menu","The Data pane","Model view","Page tabs"],a:0,w:"More options → Sort axis sets the sort field and direction."}]},
+
+{ id:"b-format", t:"Field wells & the Format pane", lvl:"Basic", min:10,
+  lead:"Field wells decide what a visual shows. The Format pane decides how it looks.",
+  b:[
+   {tbl:{h:["Well / setting","Encodes","Tip"],r:[
+    ["Axis / Category","What the bars or points are","Hierarchies add drill levels"],
+    ["Values / Y-axis","The numbers","Several measures create several series"],
+    ["Legend","Splits by color","Keep to a handful of members"],
+    ["Small multiples","Repeats the chart per member","Great for comparing regions"],
+    ["Tooltips","Extra numbers on hover","Or point to a report-page tooltip"],
+    ["Data colors","Color per series or by rule","fx button for conditional colors"],
+    ["Data labels","Values on the marks","Display units and decimal places"],
+    ["Title & header icons","Visual title and its toolbar","fx makes a dynamic title from a measure"]]}},
+   {tip:"Use **Format painter** (Home ribbon) to copy formatting from one visual to another."}
+  ],
+  q:[{q:"You want the same line chart drawn once for each Segment, side by side. Use…",o:["Small multiples","Legend","Tooltips","Drill through"],a:0,w:"Small multiples repeats the visual per member."}]},
+
+{ id:"b-sortfmt", t:"Sorting, themes & formatting", lvl:"Basic", min:10,
+  lead:"Clean sorting and consistent styling are what make a report look professional.",
+  b:[
+   {ul:["**Sort a visual**: … → Sort axis → choose field and direction.","**Sort by column**: order a text column by another (Month by Month Number).","**Themes**: View → Themes. Pick one, Customize current theme, or Browse for a .json theme.","**Number format**: select a measure → Measure tools → Format, decimals, %.","**Format painter** copies a visual's style.","**Canvas background & wallpaper**: Format pane with nothing selected.","**Align & distribute**: Format ribbon → Align."]}
+  ],
+  q:[{q:"You want every visual in the report to use brand colors in one go. Use…",o:["A report theme","Format each visual","Conditional formatting","Bookmarks"],a:0,w:"A theme sets default colors and fonts for all visuals."}]},
+
+{ id:"b-hier", t:"Hierarchies & drill down", lvl:"Basic", min:7,
+  lead:"Hierarchies let viewers drill from a summary into detail.",
+  b:[
+   {ol:["Data pane: right-click [[Segment|d]] → **Create hierarchy**.","Right-click [[Product|d]] → **Add to hierarchy** → Segment Hierarchy.","Drag the hierarchy to a visual's axis."]},
+   {tbl:{h:["Icon on the visual header","Does"],r:[
+    ["↓ Drill mode on","Clicking a bar drills into that member only"],
+    ["⇣ Go to next level","Shows the next level for all members"],
+    ["⑂ Expand all down","Shows both levels together (Segment and Product)"],
+    ["↑ Drill up","Back one level"]]}},
+   {ul:["Date columns get an automatic Year → Quarter → Month → Day hierarchy while Auto date/time is on.","Matrices drill with + and − buttons beside row headers."]}
+  ],
+  q:[{q:"Which icon shows every member's next level at once?",o:["Go to the next level","Drill up","Focus mode","Filter"],a:0,w:"Go to the next level moves the whole visual down a level."}]},
+
+{ id:"b-groups", t:"Groups, bins & lists", lvl:"Intermediate", min:10,
+  lead:"Reorganise members into new buckets without touching the source data.",
+  b:[
+   {tbl:{h:["Feature","What it does","How to create"],r:[
+    ["Group (list)","Combines members, e.g. France + Germany = 'EU core'","Ctrl-click bars → right-click → Group data, or right-click field → New group"],
+    ["Bin (size)","Splits a number into equal ranges, e.g. Sales in 50,000 steps","Right-click numeric column → New group → Group type: Bin"],
+    ["Other group","Everything you didn't group","Tick Include Other group"],
+    ["Calculated column","Custom buckets with IF or SWITCH","Table tools → New column"]]}},
+   {code:`Discount Level =
+SWITCH (
+    TRUE (),
+    financials[Discounts] = 0, "None",
+    financials[Discounts] < 10000, "Small",
+    "Large"
+)`},
+   {tip:"Need a dynamic 'Top 10 customers' group? Use a Top N filter on the visual, or RANKX in a measure, rather than a static group."}
+  ],
+  q:[{q:"You want a histogram of order sizes. First create…",o:["Bins on the Sales column","A hierarchy","A bookmark","A relationship"],a:0,w:"Bins turn a number into equal ranges you can count."}]},
+
+{ id:"b-multimeasure", t:"Showing several measures together", lvl:"Intermediate", min:12,
+  lead:"Put two, five or ten measures in one visual: side by side, on two axes, or in one table.",
+  b:[
+   {h:"1. Several measures in one well"},
+   {p:"Drop [[Sales|m]] and [[Profit|m]] both into Y-axis. Each becomes a series with its own color."},
+   {h:"2. Line and clustered column chart"},
+   {ol:["Pick the **Line and clustered column chart** visual.","Column y-axis: Sales. Line y-axis: Profit %.","Format → Y-axis → turn on **Secondary y-axis** when units differ."]},
+   {h:"3. Matrix with measures as columns"},
+   {p:"Rows: Country. Values: Sales, Profit, Units Sold. Format → Values → **Switch values to rows** if you want them stacked."},
+   {h:"4. Field parameters"},
+   {p:"**Modeling → New parameter → Fields** creates a slicer that swaps which measure or column a visual shows."},
+   {h:"5. Small multiples"},
+   {p:"One chart repeated per member, each with the same measures."}
+  ],
+  q:[{q:"You want Sales as columns and Profit % as a line on one chart. Use…",o:["Line and clustered column chart","Treemap","Slicer","Card"],a:0,w:"The combo visual gives each measure its own mark type and axis."},
+     {q:"A slicer should let viewers switch a chart between Sales and Profit. Use…",o:["A field parameter","A bookmark per page","A group","A relationship"],a:0,w:"Field parameters swap measures or columns from a slicer."}]},
+
+{ id:"b-totals", t:"Totals & subtotals", lvl:"Basic", min:6,
+  lead:"Tables and matrices add totals automatically. Know where to switch them and how they are calculated.",
+  b:[
+   {ul:["Table: Format visual → **Totals** on or off.","Matrix: Format visual → **Row subtotals** and **Column subtotals**, each level can be switched separately.","Subtotal position: top or bottom; label text is editable."]},
+   {warn:"A total is the measure evaluated for the whole group, not the sum of the visible rows. For averages, ratios and DISTINCTCOUNT, the total won't equal the sum of the lines. That is usually correct."}
+  ],
+  q:[{q:"A DISTINCTCOUNT of customers shows 900 in the total but the rows add to 1,250. Why?",o:["Customers who appear in several rows are counted once in the total","It's a bug","Totals are turned off","Wrong data type"],a:0,w:"The total counts distinct customers across all rows."}]},
+
+{ id:"b-cf", t:"Conditional formatting", lvl:"Intermediate", min:10,
+  lead:"Color tells the reader where to look. Conditional formatting applies it by rule.",
+  b:[
+   {tbl:{h:["Option","Where it works","Example"],r:[
+    ["Background color","Table, matrix cells","Red for negative profit"],
+    ["Font color","Table, matrix, card","Green text above target"],
+    ["Data bars","Table, matrix","In-cell bars for Sales"],
+    ["Icons","Table, matrix","Arrows for growth"],
+    ["Web URL","Table, matrix","Clickable links"],
+    ["fx on data colors","Bar, column, map","Bars colored by profit"]]}},
+   {ul:["Format by **Gradient** (color scale), **Rules** (if value ≥ 0 then green) or **Field value** (a measure that returns a color name or hex).","Table/matrix: Format visual → **Cell elements** → choose the series and the option."]},
+   {code:`Profit Color =
+IF ( [Total Profit] < 0, "#A93A2A", "#22794A" )`}
+  ],
+  q:[{q:"You want in-cell bars in a matrix. Use…",o:["Data bars","Icons","Web URL","Bookmarks"],a:0,w:"Data bars draw a bar inside each cell."}]}
+]},
+
+{ t: "Filters & slicers", topics: [
+{ id:"b-filters", t:"The Filters pane", lvl:"Basic", min:10,
+  lead:"Every visual, page and report can carry filters. Where you put a filter decides what it affects.",
+  b:[
+   {tbl:{h:["Level","Affects","Add it by"],r:[
+    ["Filters on this visual","One visual","Select the visual, drag a field into its section"],
+    ["Filters on this page","Every visual on the page","Drag to 'Filters on this page'"],
+    ["Filters on all pages","The whole report","Drag to 'Filters on all pages'"],
+    ["Drillthrough","A target page reached by drillthrough","Drill through well on the target page"]]}},
+   {tbl:{h:["Filter type","Use"],r:[
+    ["Basic","Tick values"],
+    ["Advanced","Contains, starts with, is greater than, is blank…"],
+    ["Top N","Top or bottom N by a measure"],
+    ["Relative date","Last 3 months, this year, next 7 days"],
+    ["Relative time","Last 60 minutes"]]}},
+   {tip:"Lock or hide filters (lock and eye icons) so viewers can't change rules they shouldn't see."}
+  ],
+  q:[{q:"You need 'last 6 months' that rolls forward each day. Filter type?",o:["Relative date","Basic","Top N","Advanced"],a:0,w:"Relative date moves with today's date."}]},
+
+{ id:"b-slicers", t:"Slicers & interactions", lvl:"Basic", min:10,
+  lead:"Slicers are filters placed on the canvas for viewers to use.",
+  b:[
+   {ul:["Add a **Slicer** visual and drop a column in Field.","Styles: vertical list, tile, dropdown; between, before, after for numbers and dates; relative date.","Newer **Button slicer** and **List slicer** visuals give tile and list designs with more formatting.","Format → Selection: single select, multi-select with Ctrl, 'Select all' option.","**View → Sync slicers**: make one slicer filter several pages and choose where it's visible.","**Format → Edit interactions**: for each other visual choose Filter, Highlight or None."]},
+   {tip:"Cross-highlighting is the default between charts. Switch to **Filter** when highlighted slivers are hard to read."}
+  ],
+  q:[{q:"One Year slicer must control pages 1, 2 and 3. Use…",o:["Sync slicers","Edit interactions","Bookmarks","Drillthrough"],a:0,w:"Sync slicers links a slicer across pages."}]},
+
+{ id:"b-context", t:"Row context, filter context & evaluation", lvl:"Advanced", min:12,
+  lead:"Every DAX number is calculated inside a context. Most 'wrong number' bugs are context bugs.",
+  b:[
+   {tbl:{h:["Context","Comes from","Effect"],r:[
+    ["Filter context","Slicers, filters, rows and columns of the visual, relationships","Decides which rows a measure sees"],
+    ["Row context","Calculated columns and iterators (SUMX, FILTER)","Gives access to the current row's values"],
+    ["Context transition","CALCULATE inside a row context","Turns the current row into a filter"]]}},
+   {ol:["Report, page and visual filters plus slicers build the outer filter context.","The visual's rows, columns and axis add filters per cell.","Filters travel across relationships from one side to many side.","CALCULATE applies its own filter arguments, replacing or adding to that context.","The measure aggregates the rows that remain.","Totals are evaluated again with fewer filters."]},
+   {try:"Build a matrix of Country × Segment with [Total Sales]. Add a measure `CALCULATE([Total Sales], REMOVEFILTERS(financials[Segment]))` and see that it ignores the Segment column but still respects Country."}
+  ],
+  q:[{q:"What gives a calculated column access to the current row's values?",o:["Row context","Filter context","A slicer","Sync slicers"],a:0,w:"Calculated columns are evaluated once per row in row context."}]}
+]},
+
+{ t: "DAX calculations", topics: [
+{ id:"b-dax", t:"DAX basics", lvl:"Intermediate", min:8,
+  lead:"DAX (Data Analysis Expressions) is the formula language of the Power BI model.",
+  b:[
+   {ol:["Select a table → **Home → New measure** (or Table tools → New column).","Type in the formula bar: name, equals sign, expression.","Reference columns as `Table[Column]` and measures as `[Measure]`.","Press Enter. A measure gets a calculator icon in the Data pane.","Set its format in **Measure tools**."]},
+   {code:`Total Sales = SUM ( financials[Sales] )
+Total Profit = SUM ( financials[Profit] )
+Profit % = DIVIDE ( [Total Profit], [Total Sales] )   // returns blank, not an error, on divide by zero`},
+   {tip:"Always use DIVIDE instead of / for ratios. It handles zero and blank safely."}
+  ],
+  q:[{q:"How do you reference a measure inside another measure?",o:["[Measure Name]","Table(Measure)","{Measure}","'Measure'"],a:0,w:"Measures are referenced in square brackets without a table name."}]},
+
+{ id:"b-funcs", t:"Essential functions", lvl:"Intermediate", min:15,
+  lead:"A small set of functions covers most everyday calculations.",
+  b:[
+   {tbl:{h:["Family","Function","Example","Result"],r:[
+    ["Math","DIVIDE","`DIVIDE([Profit], [Sales])`","Safe ratio"],
+    ["Math","ROUND","`ROUND([Profit %], 2)`","0.15"],
+    ["Text","LEFT / RIGHT / MID","`LEFT(Product[Code], 3)`","'BIK'"],
+    ["Text","&","`Customer[First] & \" \" & Customer[Last]`","Full name"],
+    ["Text","UPPER / TRIM","`TRIM(UPPER(Customer[City]))`","'HYDERABAD'"],
+    ["Text","SEARCH","`SEARCH(\"Pro\", Product[Name], 1, 0)`","Position or 0"],
+    ["Text","FORMAT","`FORMAT('Date'[Date], \"MMM yyyy\")`","'Mar 2025'"],
+    ["Date","YEAR / MONTH","`YEAR('Date'[Date])`","2025"],
+    ["Date","DATEDIFF","`DATEDIFF(Sales[OrderDate], Sales[ShipDate], DAY)`","Days to ship"],
+    ["Date","TODAY","`TODAY()`","Current date"],
+    ["Relationship","RELATED","`RELATED(Product[Category])`","Value from the one side"],
+    ["Blank","COALESCE","`COALESCE([Sales], 0)`","0 instead of blank"],
+    ["Rank","RANKX","`RANKX(ALL(Product[Name]), [Total Sales])`","1, 2, 3…"]]}}
+  ],
+  q:[{q:"A calculated column in Sales needs the product's category from the Product table. Use…",o:["RELATED","DATEDIFF","DIVIDE","TODAY"],a:0,w:"RELATED follows the relationship to the one side."}]},
+
+{ id:"b-logic", t:"Logic: IF, SWITCH & variables", lvl:"Intermediate", min:8,
+  lead:"Logical functions turn numbers into categories and flags. Variables make long formulas readable.",
+  b:[
+   {code:`Profit Status =
+IF ( [Total Profit] > 0, "Profitable", "Loss" )
+
+Region Label =
+SWITCH (
+    financials[Country],
+    "France", "Europe",
+    "Germany", "Europe",
+    "Mexico", "Americas",
+    "Other"
+)
+
+Margin Band =
+VAR m = [Profit %]
+RETURN
+    SWITCH ( TRUE (), m >= 0.2, "High", m >= 0.1, "Medium", "Low" )`},
+   {ul:["**IF** handles one condition.","**SWITCH** compares one value to many exact matches.","**SWITCH(TRUE(), …)** handles ranges in order.","**VAR … RETURN** stores a value once; faster and easier to debug.","Combine conditions with `&&` (and), `||` (or), NOT."]}
+  ],
+  q:[{q:"Which pattern handles several range conditions cleanly?",o:["SWITCH(TRUE(), …)","RELATED","DIVIDE","USERELATIONSHIP"],a:0,w:"SWITCH(TRUE()) checks each condition in order."}]},
+
+{ id:"b-iter", t:"SUM vs SUMX: row-level vs aggregate", lvl:"Advanced", min:10,
+  lead:"Aggregators sum one column. Iterators evaluate an expression for each row first. Mixing them up gives wrong numbers.",
+  b:[
+   {tbl:{h:["Formula","Computed","Result"],r:[
+    ["`SUM(Sales[Qty]) * SUM(Sales[Price])`","Totals first, then multiplies","Wrong revenue"],
+    ["`SUMX(Sales, Sales[Qty] * Sales[Price])`","Multiplies per row, then sums","Correct revenue"],
+    ["`AVERAGE(Sales[Margin %])`","Averages row ratios","Misleading overall margin"],
+    ["`DIVIDE(SUM(Sales[Profit]), SUM(Sales[Sales]))`","Sums first, then divides","Correct overall margin"]]}},
+   {warn:"A measure can't reference a bare column like `Sales[Price]`. Wrap it in an aggregator (SUM, MAX) or use an iterator. The error is 'A single value for column … cannot be determined'."}
+  ],
+  q:[{q:"Correct revenue from Quantity and Unit Price columns?",o:["SUMX(Sales, Sales[Qty] * Sales[Price])","SUM(Sales[Qty]) * SUM(Sales[Price])","AVERAGE(Sales[Price])","COUNTROWS(Sales)"],a:0,w:"SUMX multiplies per row, then adds up."}]},
+
+{ id:"b-calculate", t:"CALCULATE & filter modifiers", lvl:"Advanced", min:15,
+  lead:"CALCULATE evaluates an expression in a changed filter context. It is the most important function in DAX.",
+  b:[
+   {tbl:{h:["Modifier","Does","Example use"],r:[
+    ["Filter argument","Adds or replaces a filter","`CALCULATE([Sales], Product[Color] = \"Red\")`"],
+    ["REMOVEFILTERS / ALL","Removes filters from a table or column","% of grand total"],
+    ["ALLEXCEPT","Removes all filters except listed columns","Share within a category"],
+    ["ALLSELECTED","Keeps only outer filters (slicers)","% of visible total"],
+    ["KEEPFILTERS","Intersects instead of replacing","Respect existing selections"],
+    ["FILTER","Row-by-row condition over a table","Customers with sales above 10,000"]]}},
+   {code:`% of Total Sales =
+DIVIDE ( [Total Sales], CALCULATE ( [Total Sales], REMOVEFILTERS ( financials ) ) )
+
+% of Segment =
+DIVIDE ( [Total Sales], CALCULATE ( [Total Sales], REMOVEFILTERS ( financials[Product] ) ) )
+
+Big Customers =
+COUNTROWS ( FILTER ( VALUES ( Sales[CustomerKey] ), [Total Sales] > 10000 ) )`},
+   {tip:"Read CALCULATE as: take the current filters, apply my changes, then compute."}
+  ],
+  q:[{q:"Each country's share of the grand total, whatever slicers say about Country. Use…",o:["CALCULATE with REMOVEFILTERS on Country","SUMX","RELATED","FORMAT"],a:0,w:"Remove the Country filter in the denominator to get the grand total."}]},
+
+{ id:"b-ti", t:"Time intelligence", lvl:"Advanced", min:12,
+  lead:"Year-to-date, last year and month-over-month in a single line each, once you have a marked date table.",
+  b:[
+   {code:`Sales YTD = TOTALYTD ( [Total Sales], 'Date'[Date] )
+Sales LY = CALCULATE ( [Total Sales], SAMEPERIODLASTYEAR ( 'Date'[Date] ) )
+YoY % = DIVIDE ( [Total Sales] - [Sales LY], [Sales LY] )
+Sales PM = CALCULATE ( [Total Sales], DATEADD ( 'Date'[Date], -1, MONTH ) )
+Rolling 3M =
+CALCULATE ( [Total Sales], DATESINPERIOD ( 'Date'[Date], MAX ( 'Date'[Date] ), -3, MONTH ) )`},
+   {ul:["Use the Date table's columns on visuals, not the fact table's date.","Fiscal year ending 31 March: `TOTALYTD([Total Sales], 'Date'[Date], \"03-31\")`.","Quick measures (right-click a table → New quick measure) write many of these for you."]}
+  ],
+  q:[{q:"Which function shifts the period back one year?",o:["SAMEPERIODLASTYEAR","TOTALYTD","RELATED","RANKX"],a:0,w:"SAMEPERIODLASTYEAR returns the same dates one year earlier."}]},
+
+{ id:"b-vcalc", t:"Visual calculations & window functions", lvl:"Advanced", min:12,
+  lead:"Visual calculations compute on the numbers already in a visual: running totals, moving averages, previous value.",
+  b:[
+   {ol:["Select a visual → Home → **New visual calculation**.","Write the formula; it can reference the visual's fields directly.","It lives in that visual only, not in the model."]},
+   {code:`Running Total = RUNNINGSUM ( [Sum of Sales] )
+3M Moving Avg = MOVINGAVERAGE ( [Sum of Sales], 3 )
+vs Previous = [Sum of Sales] - PREVIOUS ( [Sum of Sales] )
+% of Parent = DIVIDE ( [Sum of Sales], COLLAPSE ( [Sum of Sales], ROWS ) )`},
+   {ul:["Model-level alternatives: window functions OFFSET, WINDOW, INDEX, RANK and ROWNUMBER.","Use a visual calculation when the logic belongs to one visual; use a measure when many visuals need it."]}
+  ],
+  q:[{q:"Running total that only one chart needs, with no model change. Use…",o:["A visual calculation with RUNNINGSUM","A calculated column","A relationship","A theme"],a:0,w:"Visual calculations live in the visual and compute on its own data."}]},
+
+{ id:"b-params", t:"What-if & field parameters", lvl:"Advanced", min:10,
+  lead:"Parameters put a value or a field choice in the viewer's hands.",
+  b:[
+   {h:"What-if (numeric range)"},
+   {ol:["**Modeling → New parameter → Numeric range**.","Name: Price Increase. Min 0, Max 0.3, Increment 0.05. Tick Add slicer to this page.","Power BI creates a table and a measure such as [Price Increase Value]."]},
+   {code:`Projected Sales = [Total Sales] * ( 1 + [Price Increase Value] )`},
+   {h:"Field parameter"},
+   {ol:["**Modeling → New parameter → Fields**.","Add Total Sales, Total Profit, Units Sold.","Use the parameter in a chart's Y-axis; the slicer swaps the measure."]}
+  ],
+  q:[{q:"You created a what-if parameter but nothing changes. Why?",o:["No measure uses its value yet","It needs DirectQuery","It must be on every page","Parameters only work in the Service"],a:0,w:"A parameter does nothing until a measure references it."}]}
+]},
+
+{ t: "Analytics, AI & maps", topics: [
+{ id:"b-analytics", t:"The Analytics pane", lvl:"Intermediate", min:8,
+  lead:"Add reference lines and statistics to a visual without writing DAX.",
+  b:[
+   {tbl:{h:["Item","Available on"],r:[
+    ["Constant, Min, Max, Average, Median, Percentile line","Bar, column, line, scatter"],
+    ["Trend line","Line, scatter, column with continuous axis"],
+    ["Forecast","Line charts with a continuous date axis"],
+    ["Error bars","Bar, column, line"],
+    ["Find anomalies","Line charts with a date axis"],
+    ["Symmetry shading, ratio line","Scatter"]]}},
+   {p:"Select the visual, open the Analytics tab of the Visualizations pane, then add and style the line."}
+  ],
+  q:[{q:"Where do you add a forecast to a line chart?",o:["Analytics pane","Data pane","Model view","Filters pane"],a:0,w:"Forecast is an Analytics pane option for line charts."}]},
+
+{ id:"b-ai", t:"AI visuals & Copilot", lvl:"Intermediate", min:10,
+  lead:"Built-in AI visuals explain what drives a number and let people ask questions in plain language.",
+  b:[
+   {tbl:{h:["Feature","Answers"],r:[
+    ["Key influencers","Which factors push a metric up or down"],
+    ["Decomposition tree","How a total splits across dimensions, step by step"],
+    ["Q&A","Type a question, get a visual"],
+    ["Find anomalies","Which points on a line are unusual, and possible reasons"],
+    ["Copilot","Summaries, suggested pages and DAX help (needs Copilot enabled on a supported capacity)"]]}},
+   {warn:"AI explanations show correlation. Check them against business knowledge before acting."}
+  ],
+  q:[{q:"You want to drill a total by Country, then Product, choosing the next split each time. Visual?",o:["Decomposition tree","Gauge","Slicer","Card"],a:0,w:"The decomposition tree lets you pick each next dimension."}]},
+
+{ id:"b-maps", t:"Maps & data categories", lvl:"Intermediate", min:10,
+  lead:"Power BI geocodes place names once a column has a data category.",
+  b:[
+   {ol:["Select a column → **Column tools → Data category** → Country/Region, State or Province, City, Postal code, Latitude, Longitude, Address, Place.","Add an **Azure Maps** visual and drop the column in Location.","Add a measure to Size for bubbles, or switch on the filled map layer and color by a measure.","Ambiguous names (Hyderabad exists in India and Pakistan)? Add a 'City, Country' column and categorize it."]},
+   {ul:["Azure Maps layers: bubble, bar chart (3D columns), heat map, filled map, reference layers.","The older Map and Filled map visuals are being retired in favour of Azure Maps.","**Shape map** draws your own TopoJSON regions such as Indian districts.","Map visuals send location data to a mapping service; your admin may need to allow it."]}
+  ],
+  q:[{q:"Some cities land in the wrong country on your map. Most likely cause?",o:["Ambiguous or uncategorised place names","Wrong theme","Too many pages","No measures"],a:0,w:"Set the data category and add context such as country to each name."}]}
+]},
+
+{ t: "Report design", topics: [
+{ id:"b-report1", t:"Build your first report page", lvl:"Intermediate", min:10,
+  lead:"A report page combines several visuals into one screen that answers a business question.",
+  b:[
+   {ol:["Add a page with the **+** tab. Rename it.","With nothing selected, Format pane → **Canvas settings**: 16:9 (1280 × 720) by default, or 4:3, Letter, Custom.","Add a title with a **Text box** (Insert ribbon).","Place KPI cards across the top, the main chart below, slicers at the side.","**View → Page view → Fit to page** to see the whole page.","Click a bar to see the other visuals cross-filter."]},
+   {tip:"Design at the size people will view it. 1280 × 720 suits most laptops and projectors."}
+  ],
+  q:[{q:"Where do you change page size?",o:["Format pane → Canvas settings (nothing selected)","Model view","Data pane","Filters pane"],a:0,w:"Canvas settings apply when no visual is selected."}]},
+
+{ id:"b-layout", t:"Layout: shapes, buttons & the Selection pane", lvl:"Intermediate", min:10,
+  lead:"Text, shapes, images and buttons turn a page of charts into a designed report.",
+  b:[
+   {tbl:{h:["Object","Use"],r:[
+    ["Text box","Titles, notes, dynamic text with values"],
+    ["Shape","Background panels, dividers"],
+    ["Image","Logos and icons"],
+    ["Button","Back, bookmark, page navigation, drill through, Q&A, web URL"],
+    ["Navigator","Auto-built page or bookmark navigation bar"],
+    ["Group (Ctrl+G)","Move and hide visuals together"]]}},
+   {ul:["**View → Selection**: rename objects, set layer order, show or hide them.","**Format → Align** and Distribute for tidy spacing.","Visual borders, shadows and rounded corners live under General → Effects."]}
+  ],
+  q:[{q:"You can't click a visual because a shape sits on top. Fix in…",o:["Selection pane layer order","Model view","Data pane","Themes"],a:0,w:"Move the shape below the visual in the Selection pane."}]},
+
+{ id:"b-interact", t:"Drillthrough, tooltips & interactions", lvl:"Advanced", min:12,
+  lead:"Interactions make reports explorable: click to filter, right-click to drill, hover for detail.",
+  b:[
+   {tbl:{h:["Feature","Does","Set up"],r:[
+    ["Cross-filter / highlight","Click a mark to filter or highlight others","Format → Edit interactions"],
+    ["Drillthrough","Right-click a mark to jump to a detail page for that item","Add the field to Drill through on the target page"],
+    ["Report-page tooltip","Hover shows a mini page","Page format → Page information → Allow use as tooltip; then set the visual's tooltip to that page"],
+    ["Button actions","Go to page, bookmark, drill through, web URL","Insert → Buttons → Action"]]}},
+   {ul:["Drillthrough pages get an automatic Back button.","**Keep all filters** decides whether other filters travel with the drill.","In Desktop, Ctrl+click buttons to test them; in the Service a normal click works."]}
+  ],
+  q:[{q:"Right-click a country and land on a page about only that country. Use…",o:["Drillthrough","A theme","Sync slicers","A bin"],a:0,w:"Drillthrough filters the target page to the clicked item."}]},
+
+{ id:"b-bookmarks", t:"Bookmarks & navigation", lvl:"Advanced", min:10,
+  lead:"A bookmark saves a page's current state: filters, slicers, visible visuals and sort.",
+  b:[
+   {ol:["**View → Bookmarks**, then **Add**.","Rename it. Right-click to choose what it stores: Data, Display, Current page, All or Selected visuals.","Insert a button and set Action → Bookmark.","Hide and show visuals with the Selection pane, then save a bookmark per state, to build toggles.","**Insert → Buttons → Navigator → Bookmark navigator** creates a button per bookmark group."]},
+   {tip:"Untick **Data** on a toggle bookmark so it shows or hides visuals without resetting the viewer's slicers."}
+  ],
+  q:[{q:"A 'Show chart / Show table' toggle should not reset slicers. On its bookmarks you untick…",o:["Data","Display","Current page","Selected visuals"],a:0,w:"Without Data, the bookmark leaves filters alone."}]},
+
+{ id:"b-mobile", t:"Mobile layout", lvl:"Intermediate", min:6,
+  lead:"Design one report, then arrange a phone version of each page.",
+  b:[
+   {ol:["**View → Mobile layout**.","Drag visuals from the Page visuals list onto the phone canvas.","Resize and reorder; formatting can differ from the desktop layout.","Switch back to the web layout; both are saved in the file."]},
+   {tip:"Put the headline card first and keep filters as slicers near the top. Phone screens scroll vertically."}
+  ],
+  q:[{q:"Where do you design a phone version of a page?",o:["View → Mobile layout","Model view","DAX query view","Power Query"],a:0,w:"Mobile layout arranges visuals for portrait phones."}]},
+
+{ id:"b-design", t:"Report design checklist", lvl:"Intermediate", min:8,
+  lead:"A report page is judged in five seconds. Design for that glance.",
+  b:[
+   {ul:["Headline KPI cards top-left; people scan in a Z pattern.","Four to six visuals per page is plenty. Split the rest into more pages.","One meaning per color across the report (e.g., red always = loss).","Use data labels instead of axes and legends where you can.","Align to a grid; equal gaps between visuals.","Write titles that state the insight: 'Germany leads profit growth'.","Fewer visuals and fewer bidirectional relationships = faster pages."]}
+  ],
+  q:[{q:"Where should the most important number usually go?",o:["Top-left","Bottom-right","In a tooltip","On a hidden page"],a:0,w:"Readers start scanning at the top-left."}]}
+]},
+
+{ t: "Storytelling", topics: [
+{ id:"b-story", t:"Tell a story with pages & bookmarks", lvl:"Intermediate", min:10,
+  lead:"Power BI has no separate story sheet. You tell a story with ordered pages, bookmarks and a navigator.",
+  b:[
+   {ol:["Plan 4–6 steps, one per bookmark or page.","Set up each state (filters, highlights, visible notes) and add a bookmark.","Group the bookmarks (select several → Group).","Insert a **Bookmark navigator** for the group, or Previous/Next buttons.","Add a text box per step with the takeaway.","Present with **View** in the Service or bookmarks' **View** mode in Desktop.","Export to PowerPoint from the Service to present slides that stay live."]}
+  ],
+  q:[{q:"Which object steps viewers through saved report states in order?",o:["Bookmark navigator","Slicer","Matrix","Gauge"],a:0,w:"A bookmark navigator builds a button per bookmark."}]},
+
+{ id:"b-storycraft", t:"Storytelling that lands", lvl:"Intermediate", min:8,
+  lead:"Seven classic shapes for data stories. Pick one before you build.",
+  b:[
+   {tbl:{h:["Shape","Example"],r:[
+    ["Change over time","How sales grew since launch"],
+    ["Drill down","Country → product → segment where the problem sits"],
+    ["Zoom out","One product, then how it compares to all products"],
+    ["Contrast","Government vs Enterprise segment"],
+    ["Intersections","When one line overtakes another"],
+    ["Factors","Break profit into its drivers"],
+    ["Outliers","The one country behaving differently"]]}},
+   {tip:"Use a simple arc: context → finding → so what → recommended action."}
+  ],
+  q:[{q:"'Canada overtook France in Q3' is which story shape?",o:["Intersections","Outliers","Zoom out","Factors"],a:0,w:"An intersection is a crossover point."}]}
+]},
+
+{ t: "Reuse, update & share", topics: [
+{ id:"b-replace", t:"Point a report at new data", lvl:"Intermediate", min:10,
+  lead:"Swap the source of an existing report instead of rebuilding it.",
+  b:[
+   {ol:["**Home → Transform data → Data source settings**.","Select the source → **Change Source** → pick the new file or server.","Click Apply changes. Matching column names keep every visual working.","If a column was renamed at source, fix it in Power Query with a Rename step so the model name stays the same."]},
+   {ul:["Better: store the file path or server name in a **Power Query parameter** (Manage Parameters). Change it in one place, or per environment in the Service.","Save as a **.pbit template** so others are prompted for the parameter on open."]}
+  ],
+  q:[{q:"Where do you change a report's file path in one go?",o:["Transform data → Data source settings → Change Source","Model view","Format pane","Bookmarks"],a:0,w:"Data source settings lists every source and lets you change it."}]},
+
+{ id:"b-refresh", t:"Add new data to an existing report", lvl:"Intermediate", min:10,
+  lead:"Keep a report current as new rows or new files arrive.",
+  b:[
+   {tbl:{h:["Situation","What to do"],r:[
+    ["Same file, more rows","Home → Refresh"],
+    ["A new monthly file arrives","Use the Folder connector, then Refresh"],
+    ["One extra file once","Power Query → Append Queries"],
+    ["Large table, only new rows","Incremental refresh with RangeStart / RangeEnd parameters"],
+    ["Published to the Service","Set a scheduled refresh on the semantic model"]]}},
+   {tip:"Keep Excel data in a formatted table (Ctrl+T) so new rows stay inside the range Power BI reads."}
+  ],
+  q:[{q:"Each month Sales_YYYY_MM.xlsx lands in a folder. Best setup?",o:["Folder connector + Refresh","Rebuild monthly","Merge each month","Copy-paste data"],a:0,w:"The Folder connector picks up every file on refresh."}]},
+
+{ id:"b-template", t:"Copy, template & version your work", lvl:"Intermediate", min:8,
+  lead:"Reuse what already works instead of starting from blank.",
+  b:[
+   {ul:["Right-click a page tab → **Duplicate page**.","Copy visuals between reports with Ctrl+C / Ctrl+V; fields must exist in the target model.","**File → Export → Power BI template** saves a .pbit without data.","Export your theme (View → Themes → Save current theme) and reuse it everywhere.","Save as a **Power BI Project (.pbip)** and commit to Git for real version history.","In the Service, Fabric workspaces can link to Git directly."]}
+  ],
+  q:[{q:"You paste a visual into another report and it shows errors. Likely cause?",o:["The fields it uses don't exist in that model","Wrong theme","Mobile layout is off","Too many pages"],a:0,w:"A pasted visual needs fields with the same names in the target model."}]},
+
+{ id:"b-publish", t:"Export & publish", lvl:"Basic", min:8,
+  lead:"Get your work out of Desktop in the format people need.",
+  b:[
+   {tbl:{h:["Output","How"],r:[
+    ["Power BI Service","Home → Publish → choose a workspace"],
+    ["PDF","File → Export → Export to PDF"],
+    ["Template","File → Export → Power BI template (.pbit)"],
+    ["Data from a visual","Visual … → Export data (CSV or Excel)"],
+    ["PowerPoint","In the Service: Export → PowerPoint (image or live pages)"],
+    ["Excel analysis","In the Service: Export → Analyze in Excel"],
+    ["Public web","In the Service: File → Embed report → Publish to web (public, use with care)"]]}}
+  ],
+  q:[{q:"Which button in Desktop sends the report to the Service?",o:["Home → Publish","File → Export → PDF","Save As","Refresh"],a:0,w:"Publish uploads the report and its semantic model."}]},
+
+{ id:"b-perf", t:"Performance & model hygiene", lvl:"Advanced", min:10,
+  lead:"Fast reports get used. Slow ones get abandoned.",
+  b:[
+   {ul:["**Optimize → Performance analyzer → Start recording**, then refresh visuals; see time for DAX query, visual display and other.","Copy a slow visual's query into **DAX query view** to test it.","Remove unused columns, especially long text and high-cardinality IDs.","Prefer a star schema and single-direction relationships.","Prefer measures over calculated columns.","Turn off Auto date/time when you have a date table.","**Optimize → Pause visuals** while editing large models.","External tools such as DAX Studio and Tabular Editor's Best Practice Analyzer find common issues."]}
+  ],
+  q:[{q:"Which built-in tool times each visual's DAX query?",o:["Performance analyzer","Selection pane","Bookmarks","Sync slicers"],a:0,w:"Performance analyzer records timings per visual."}]},
+
+{ id:"b-shortcuts", t:"Shortcuts that save hours", lvl:"Basic", min:5,
+  lead:"A handful of shortcuts you'll use every day in Desktop.",
+  b:[
+   {tbl:{h:["Action","Shortcut"],r:[
+    ["Save","Ctrl+S"],
+    ["Undo / Redo","Ctrl+Z / Ctrl+Y"],
+    ["Copy / paste a visual","Ctrl+C / Ctrl+V"],
+    ["Group selected visuals","Ctrl+G"],
+    ["Select several visuals or data points","Ctrl+click"],
+    ["Test a button or bookmark in Desktop","Ctrl+click the button"],
+    ["New line in the DAX formula bar","Shift+Enter"],
+    ["Comment / uncomment DAX lines","Ctrl+/"],
+    ["Move a DAX line up or down","Alt+↑ / Alt+↓"]]}}
+  ],
+  q:[{q:"Your multi-line DAX keeps submitting when you press Enter. What adds a new line?",o:["Shift+Enter","Ctrl+G","Ctrl+S","Alt+F4"],a:0,w:"Shift+Enter inserts a line break in the formula bar."}]}
+]}
+],
+days: [
+ {t:"Good-to-know information", topics:["b-family","b-ui","b-ext","b-sources","b-vocab","b-types","b-colmeas","b-implicit"], goals:["Name each Power BI product and its job","Tell .pbix from .pbit and .pbip","Know which sources Power BI can read","Decide column vs measure"], task:"Install Power BI Desktop, load the financials sample and write down, for 10 columns, the data type and whether it should be used as a column (slice) or a measure. Play the column-or-measure sorter until you score 12/12."},
+ {t:"Visual types: which visual for which data", topics:["b-chartmap","b-visuals","b-agg","b-recipes"], goals:["Match a business question to a visual","Use the Visualizations pane","Pick the right aggregation"], task:"Write six questions about the financials data (e.g., 'Which country is most profitable?'). Choose a visual for each with the chooser, then build three of them."},
+ {t:"Load a table & first representation", topics:["b-connect","b-storage","b-pq","b-firstviz"], goals:["Connect to Excel and CSV","Pick a storage mode","Clean in Power Query","Build and save a labelled chart"], task:"Download any public CSV (e.g., your city's open data), clean three columns in Power Query and build a sorted, labelled bar chart. Save the .pbix."},
+ {t:"A bit advanced: formatting, sorting, filters", topics:["b-format","b-sortfmt","b-hier","b-filters","b-slicers"], goals:["Use field wells and the Format pane","Apply a theme","Build hierarchies","Add filters and synced slicers"], task:"Build a Product profit chart colored by profit, a Segment → Product hierarchy, a relative date filter and a Country slicer synced across two pages."},
+ {t:"Several measures & first DAX", topics:["b-multimeasure","b-totals","b-dax","b-logic","b-funcs"], goals:["Show several measures together","Build a combo chart","Write explicit measures","Use IF, SWITCH and VAR"], task:"Create Total Sales, Total Profit and Profit % measures. Build a monthly Sales (columns) + Profit % (line) combo. Add a SWITCH column grouping Discount Band into 'Discounted' / 'Full price'."},
+ {t:"Combining tables & modelling", topics:["b-model","b-rel","b-merge","b-append","b-groups"], goals:["Design a star schema","Set relationships","Merge and append in Power Query","Use groups and bins"], task:"Split financials into a Sales fact and a Product dimension, relate them, then append three yearly CSVs with the Folder connector. Create bins on Sales for a histogram."},
+ {t:"Report page preparation", topics:["b-report1","b-layout","b-interact","b-mobile","b-design"], goals:["Lay out a page with shapes and groups","Add drillthrough and tooltips","Create a mobile layout"], task:"Build a Sales Overview page: KPI cards, trend line, map and bar chart. Add a Country drillthrough page and a mobile layout."},
+ {t:"Storytelling with bookmarks", topics:["b-bookmarks","b-story","b-storycraft"], goals:["Build bookmark toggles","Step through a story","Write insight-led captions"], task:"Turn yesterday's report into a 5-step story using the 'Drill down' shape: total → country → segment → product → recommendation, with a bookmark navigator."},
+ {t:"Reuse or update an existing report", topics:["b-replace","b-refresh","b-template"], goals:["Change a data source","Append new data and refresh","Use templates and Git-friendly projects"], task:"Save your Day 7 report as a .pbit, open it on a different file using a path parameter, then add a new month of data through the Folder connector."},
+ {t:"DAX deep dive", topics:["b-datetable","b-iter","b-calculate","b-ti"], goals:["Build and mark a date table","Choose SUM vs SUMX","Use CALCULATE modifiers","Write YTD and YoY"], task:"Build a date table, then measures for Sales YTD, Sales LY, YoY % and % of total by country. Prove SUMX vs SUM gives different revenue on Units × Price."},
+ {t:"Interactivity & evaluation context", topics:["b-params","b-context","b-vcalc","b-cf"], goals:["Build what-if and field parameters","Explain filter vs row context","Use visual calculations","Apply conditional formatting"], task:"Add a Price Increase what-if slider and a measure-switcher field parameter. Add a running total visual calculation and color matrix cells by profit."},
+ {t:"Analytics, AI & maps", topics:["b-analytics","b-ai","b-maps","b-composite"], goals:["Add reference lines and forecasts","Use key influencers and decomposition tree","Map by data category"], task:"Create an Azure Maps view of profit by country, a scatter of Sales vs Profit with a trend line, a 6-month forecast and a decomposition tree of Sales."},
+ {t:"Share, export & performance", topics:["b-publish","b-perf","b-shortcuts"], goals:["Publish and export","Run the Performance analyzer","Build faster with shortcuts"], task:"Run Performance analyzer on your report, fix the slowest visual, publish to My workspace and export the report to PDF."},
+ {t:"Capstone project", topics:[], review:["b-colmeas","b-rel","b-calculate","b-interact","b-context"], goals:["Plan, build and present an end-to-end analysis","Prove every skill from Days 1–13"], task:"Pick a dataset you care about. Deliver: a star-schema model with a date table, a report page with drillthrough and a parameter, a 5-step bookmark story and a mobile layout. Present it in 5 minutes."}
+]
+},
+
+/* ------------------------------------------------------------ SERVICE */
+service: {
+label: "Power BI Service",
+short: "Service",
+blurb: "The cloud platform. Publish, refresh, secure and share reports, dashboards and apps with your organisation.",
+modules: [
+{ t:"Getting started", topics:[
+{ id:"s-what", t:"What the Service is", lvl:"Basic", min:6,
+  lead:"The Power BI Service (app.powerbi.com) is where reports live after publishing: shared, refreshed and secured.",
+  b:[
+   {tbl:{h:["","Power BI Desktop","Power BI Service"],r:[
+    ["Runs","Windows app","Web browser"],
+    ["Main job","Model and author","Share, refresh, secure, collaborate"],
+    ["Power Query & modelling","Full","Limited (web modelling, dataflows)"],
+    ["Dashboards, apps, subscriptions","No","Yes"],
+    ["Scheduled refresh","No","Yes"]]}},
+   {ul:["Sign in with a work or school account.","The left navigation holds Home, Create, Browse, OneLake catalog, Apps, Metrics, Workspaces.","Power BI now lives inside Microsoft Fabric; you may see Fabric items beside reports."]}
+  ],
+  q:[{q:"Where do you set a report's data to refresh every morning?",o:["Power BI Service","Power BI Desktop","Report Builder","Excel"],a:0,w:"Scheduled refresh is set on the semantic model in the Service."}]},
+
+{ id:"s-licenses", t:"Licences & capacity", lvl:"Basic", min:8,
+  lead:"Your licence decides what you can share and with whom.",
+  b:[
+   {tbl:{h:["Licence","Can do"],r:[
+    ["Free","Build in My workspace; view content hosted in a large Fabric capacity"],
+    ["Pro","Publish to shared workspaces, share with other Pro users, 8 scheduled refreshes a day"],
+    ["Premium Per User (PPU)","Pro features plus premium features, 48 refreshes a day; viewers need PPU too"],
+    ["Fabric capacity (F SKUs)","Organisation-wide capacity; from F64, free users can view Power BI content"]]}},
+   {warn:"Licence names, limits and prices change. Check Microsoft's current Power BI pricing page before planning a roll-out."}
+  ],
+  q:[{q:"Two Pro users want to share a report. Where must it be?",o:["A shared workspace","My workspace only","Desktop","Report Server"],a:0,w:"Sharing beyond yourself uses a shared workspace and Pro (or higher) licences."}]},
+
+{ id:"s-workspaces", t:"Workspaces & roles", lvl:"Basic", min:8,
+  lead:"A workspace is a shared folder for reports, models and other items, with roles that set who can do what.",
+  b:[
+   {tbl:{h:["Role","Can"],r:[
+    ["Admin","Everything, including deleting the workspace and managing all roles"],
+    ["Member","Add people (except admins), publish, share, update apps"],
+    ["Contributor","Create, edit and delete content; publish from Desktop"],
+    ["Viewer","View and interact only"]]}},
+   {ul:["**My workspace** is personal; don't build team content there.","Create one: Workspaces → **+ New workspace**, name it, assign a licence mode.","Assign roles with **Manage access**; use security groups, not individuals."]}
+  ],
+  q:[{q:"A colleague should edit reports but not add people. Role?",o:["Contributor","Admin","Member","Viewer"],a:0,w:"Contributors edit content but can't manage access."}]},
+
+{ id:"s-items", t:"Item types in a workspace", lvl:"Basic", min:6,
+  lead:"Publishing one .pbix creates two items. Know what else you'll meet.",
+  b:[
+   {tbl:{h:["Item","What it is"],r:[
+    ["Semantic model","The data and model (formerly 'dataset'); refresh and security live here"],
+    ["Report","Pages of visuals built on one semantic model"],
+    ["Dashboard","One canvas of tiles pinned from many reports"],
+    ["Paginated report","Printable .rdl report"],
+    ["Dataflow","Power Query in the cloud, reusable by many models"],
+    ["Scorecard / metrics","Goals tracked against targets"],
+    ["App","A packaged, read-only bundle of content for an audience"]]}}
+  ],
+  q:[{q:"You publish Sales.pbix. Which two items appear?",o:["A report and a semantic model","A dashboard and an app","A dataflow and a scorecard","Only a report"],a:0,w:"Publishing creates a report and its semantic model."}]}
+]},
+{ t:"Publish & refresh", topics:[
+{ id:"s-publish", t:"Publish from Desktop", lvl:"Basic", min:6,
+  lead:"Publishing is the bridge from your laptop to your organisation.",
+  b:[
+   {ol:["Save the .pbix in Desktop.","**Home → Publish** and sign in.","Pick a workspace.","Click the link in the success message to open the report in the Service.","Publishing again with the same name replaces both report and model; links stay the same."]},
+   {tip:"You can also upload a .pbix in the Service: Workspace → **Upload → Browse**."}
+  ],
+  q:[{q:"You republish with the same name. What happens to the report link?",o:["It stays the same","It changes","The old report is kept as a copy","Nothing is published"],a:0,w:"Replacing keeps the same item and link."}]},
+
+{ id:"s-refresh", t:"Scheduled refresh", lvl:"Intermediate", min:10,
+  lead:"Imported data is a snapshot. Scheduled refresh keeps it current without you opening Desktop.",
+  b:[
+   {ol:["Workspace → semantic model → **… → Settings**.","**Data source credentials**: edit and sign in for each source.","**Gateway and cloud connections**: map on-premises sources to a gateway.","**Refresh**: turn on, set frequency, time zone and times.","Add failure notification contacts."]},
+   {tbl:{h:["Licence","Scheduled refreshes per day"],r:[["Pro","Up to 8"],["PPU / Fabric capacity","Up to 48"]]}},
+   {warn:"A file on your laptop can't be refreshed from the cloud without a gateway. Put source files in OneDrive or SharePoint instead."}
+  ],
+  q:[{q:"Refresh fails with a credentials error. Where do you fix it?",o:["Semantic model settings → Data source credentials","Report Format pane","Desktop Model view","Mobile app"],a:0,w:"Credentials are stored on the semantic model's settings."}]},
+
+{ id:"s-gateway", t:"On-premises data gateway", lvl:"Intermediate", min:8,
+  lead:"A gateway is a small service on a machine inside your network that lets the cloud reach on-premises data.",
+  b:[
+   {tbl:{h:["Mode","For"],r:[["Standard","Shared by many users and items; managed by IT"],["Personal","One user, Power BI only, no DirectQuery"]]}},
+   {ul:["Needed for SQL Server on a local server, files on a network share, and similar.","Not needed for cloud sources such as SharePoint Online, Azure SQL or Snowflake.","Install on an always-on machine, not a laptop that sleeps."]}
+  ],
+  q:[{q:"Your source is OneDrive for Business. Do you need a gateway?",o:["No, it's a cloud source","Yes, always","Only for DirectQuery","Only on Fridays"],a:0,w:"Cloud sources refresh directly."}]},
+
+{ id:"s-webauth", t:"Create and edit in the browser", lvl:"Intermediate", min:6,
+  lead:"You can build and edit reports in the Service without Desktop.",
+  b:[
+   {ul:["Open a report → **Edit** to change visuals and pages in the browser.","From a semantic model: **Create a report** (blank or auto-generated).","**Create → Paste or manually enter data** to build a quick report.","**Explore this data** gives a fast ad-hoc view of a visual.","Web modelling lets you edit measures and relationships of some models in the browser."]},
+   {tip:"Treat the .pbix (or .pbip in Git) as the master copy. Edits made only in the browser are easy to overwrite on the next publish from Desktop."}
+  ],
+  q:[{q:"You edit a report in the browser, then republish an older .pbix from Desktop. Result?",o:["The browser edits are overwritten","Both versions merge","The publish is blocked","Nothing changes"],a:0,w:"Publishing replaces the report with the Desktop version."}]}
+]},
+{ t:"Share & collaborate", topics:[
+{ id:"s-dashboards", t:"Dashboards & alerts", lvl:"Basic", min:8,
+  lead:"A dashboard is a single canvas of tiles pinned from one or more reports.",
+  b:[
+   {ol:["Open a report, hover a visual → **Pin visual** → New or existing dashboard.","Or **… → Pin to a dashboard** to pin a whole live page.","Arrange and resize tiles; clicking a tile opens its report.","Add tiles for text, images, video or web content with **Edit → Add a tile**.","On a card, KPI or gauge tile: **… → Manage alerts** to get an email when a value crosses a threshold."]},
+   {tbl:{h:["","Report","Dashboard"],r:[["Pages","Many","One"],["Sources","One semantic model","Many reports"],["Slicers & filters","Yes","No"],["Alerts","No","Yes, on some tiles"]]}}
+  ],
+  q:[{q:"Which tile types can carry a data alert?",o:["Card, KPI and gauge","Any tile","Maps only","Text tiles"],a:0,w:"Alerts work on single-number tiles: cards, KPIs and gauges."}]},
+
+{ id:"s-share", t:"Ways to share", lvl:"Basic", min:10,
+  lead:"Pick the sharing route that fits the audience.",
+  b:[
+   {tbl:{h:["Route","Best for"],r:[
+    ["Share link / direct access","A few people, one report"],
+    ["Workspace roles","The team that builds content"],
+    ["App","A wide read-only audience"],
+    ["Teams tab / SharePoint embed","Bring reports where people already work"],
+    ["Subscriptions","Emailed snapshots on a schedule"],
+    ["Export to PowerPoint / PDF","Meetings and print"],
+    ["Publish to web","Public websites only: anyone can see it"]]}},
+   {warn:"Publish to web makes data public on the internet with no sign-in. Never use it for internal or personal data."}
+  ],
+  q:[{q:"The whole sales department needs a read-only set of reports. Best route?",o:["An app","Publish to web","Give everyone Member role","Email the .pbix"],a:0,w:"Apps package content for wide, read-only audiences."}]},
+
+{ id:"s-apps", t:"Apps & audiences", lvl:"Intermediate", min:8,
+  lead:"An app packages chosen reports and dashboards from one workspace with its own navigation.",
+  b:[
+   {ol:["Workspace → **Create app**.","Setup: name, description, logo, theme color.","Content: add reports and dashboards; order them; add links and sections.","Audience: create audiences and choose which content each sees.","Publish. Later changes need **Update app**."]},
+   {tip:"Develop in the workspace, then update the app when ready. Viewers never see half-finished work."}
+  ],
+  q:[{q:"You changed a report in the workspace but app users don't see it. Why?",o:["The app hasn't been updated","Refresh failed","The report is a dashboard","Viewers need Pro"],a:0,w:"Changes reach app users only after Update app."}]},
+
+{ id:"s-rls", t:"Row-level security", lvl:"Advanced", min:12,
+  lead:"Row-level security (RLS) shows each viewer only their rows: the India manager sees India.",
+  b:[
+   {ol:["Desktop: **Modeling → Manage roles** → create role 'Country Manager'.","Add a DAX filter on a table.","Test with **Modeling → View as** → the role (and Other user).","Publish. In the Service: semantic model → **… → Security** → add people or groups to the role."]},
+   {code:`// Static role
+[Country] = "India"
+
+// Dynamic role: map signed-in email to a country in a Users table
+Users[Email] = USERPRINCIPALNAME ()`},
+   {warn:"RLS applies to Viewers. Workspace Admins, Members and Contributors see all data."}
+  ],
+  q:[{q:"Which function returns the signed-in user's email for dynamic RLS?",o:["USERPRINCIPALNAME()","TODAY()","RELATED()","SELECTEDVALUE()"],a:0,w:"USERPRINCIPALNAME returns the user's sign-in name."}]}
+]},
+{ t:"Govern & automate", topics:[
+{ id:"s-alm", t:"Deployment pipelines & Git", lvl:"Advanced", min:10,
+  lead:"Move content safely from development to test to production.",
+  b:[
+   {ul:["**Deployment pipelines** link Development, Test and Production workspaces; deploy with one click and compare stages.","**Deployment rules** swap data source or parameter values per stage.","**Git integration** connects a Fabric-enabled workspace to Azure DevOps or GitHub.","**Endorsement**: mark trusted items as Promoted or Certified.","**Sensitivity labels** (Microsoft Purview) travel with exported files."]}
+  ],
+  q:[{q:"Test must use a test database and Production a live one. Use…",o:["Deployment rules","A slicer","A bookmark","A theme"],a:0,w:"Deployment rules change data sources per stage."}]},
+
+{ id:"s-lineage", t:"Lineage, impact & usage", lvl:"Intermediate", min:6,
+  lead:"Know where data comes from, what breaks if you change it, and who uses it.",
+  b:[
+   {ul:["Workspace → **Lineage view** shows sources → dataflows → models → reports → dashboards.","Semantic model → **Impact analysis** lists dependent reports and their viewers.","Report → **… → View usage metrics** for views and viewers over time.","Notify affected users from impact analysis before a breaking change."]}
+  ],
+  q:[{q:"Before renaming a column in a shared model, you check…",o:["Impact analysis","Format pane","Mobile layout","Themes"],a:0,w:"Impact analysis lists everything that depends on the model."}]},
+
+{ id:"s-mobile", t:"Power BI on mobile", lvl:"Basic", min:5,
+  lead:"The mobile app brings reports, dashboards and alerts to phones and tablets.",
+  b:[
+   {ul:["Install Power BI Mobile (iOS, Android, Windows) and sign in.","Reports show their mobile layout when one exists.","Star items as **Favorites** for quick access.","Receive data alert notifications.","Annotate a view and share a snapshot with colleagues."]}
+  ],
+  q:[{q:"Why does a report look different on a phone?",o:["The author created a mobile layout","The app is broken","Phones ignore filters","Phones show dashboards only"],a:0,w:"Mobile layouts are shown on phones in portrait."}]}
+]}
+],
+days:[
+ {t:"What the Service is & licences", topics:["s-what","s-licenses","s-items"], goals:["Explain Desktop vs Service","Know licence options","Name workspace item types"], task:"Sign in to app.powerbi.com. Open a sample (Learn → Sample reports) and list every item type it creates in My workspace."},
+ {t:"Workspaces & publishing", topics:["s-workspaces","s-publish"], goals:["Create a workspace","Assign roles","Publish from Desktop"], task:"Create a workspace (if your licence allows), publish your Desktop report and open both the report and its semantic model."},
+ {t:"Refresh & gateways", topics:["s-refresh","s-gateway"], goals:["Set credentials","Schedule refresh","Know when a gateway is needed"], task:"Move your source file to OneDrive or SharePoint, repoint the report, publish and set a daily scheduled refresh with failure notifications."},
+ {t:"Dashboards & browser editing", topics:["s-dashboards","s-webauth"], goals:["Pin tiles","Set a data alert","Edit in the browser"], task:"Build a dashboard from two reports, add a text tile, and set an alert on a card tile."},
+ {t:"Sharing & apps", topics:["s-share","s-apps"], goals:["Choose the right sharing route","Publish an app with audiences"], task:"Create an app with two audiences, each seeing different reports. Subscribe yourself to a weekly email of one page."},
+ {t:"Security & governance", topics:["s-rls","s-alm","s-lineage"], goals:["Build and test RLS","Plan a pipeline","Read lineage and impact"], task:"Add a Country Manager role with a dynamic USERPRINCIPALNAME filter, test it with View as, and check impact analysis on your model."},
+ {t:"Mobile & capstone", topics:["s-mobile"], review:["s-refresh","s-share","s-rls"], goals:["Use the mobile app","Ship a governed report"], task:"Publish your capstone report to a workspace with scheduled refresh, RLS and an app. Open it on your phone, favourite it and set an alert."}
+]
+},
+
+/* ------------------------------------------------------------ POWER QUERY */
+pq: {
+label: "Power Query",
+short: "Power Query",
+blurb: "The data-shaping engine. Clean, combine and reshape data with recorded steps before it reaches the model.",
+modules: [
+{ t:"Power Query foundations", topics:[
+{ id:"q-what", t:"What Power Query does", lvl:"Basic", min:6,
+  lead:"Power Query turns messy source data into clean tables using recorded, repeatable steps.",
+  b:[
+   {ul:["Lives inside Power BI Desktop (Transform data), Excel (Data → Get Data) and dataflows in the Service and Fabric.","Every action becomes an **Applied Step** written in the M language.","On refresh, all steps run again on the new data.","The result loads into the model (Power BI) or a sheet or the Data Model (Excel)."]},
+   {tbl:{h:["Do in Power Query","Do in DAX"],r:[
+    ["Fix types, spelling, blanks","Measures that respond to filters"],
+    ["Merge, append, unpivot, group","Ratios, time intelligence, ranking"],
+    ["Static columns (e.g. Full Name)","Context-dependent calculations"]]}},
+   {tip:"Shape data as far upstream as possible and only as far downstream as necessary."}
+  ],
+  q:[{q:"Which runs again automatically on every refresh?",o:["Applied Steps in Power Query","Manual edits in Excel","Bookmarks","Themes"],a:0,w:"Recorded steps re-run on each refresh."}]},
+
+{ id:"q-ui", t:"The Power Query Editor", lvl:"Basic", min:8,
+  lead:"Learn the editor's areas and every tutorial becomes easy to follow.",
+  b:[
+   {tbl:{h:["Area","Where","Used for"],r:[
+    ["Ribbon","Top","Home, Transform, Add Column, View, Tools, Help"],
+    ["Queries pane","Left","Every query; folders; enable or disable load"],
+    ["Formula bar","Above the grid","The M code of the selected step (View → Formula bar)"],
+    ["Data preview","Centre","Rows at the selected step"],
+    ["Query Settings","Right","Name and Applied Steps"],
+    ["Advanced Editor","Home ribbon","The whole query's M code"],
+    ["Status bar","Bottom","Column and row counts, profiling scope"]]}},
+   {tip:"**Transform** changes a column in place. **Add Column** creates a new column and keeps the original."}
+  ],
+  q:[{q:"You want a new column with the year, keeping the original date. Which ribbon tab?",o:["Add Column","Transform","View","Help"],a:0,w:"Add Column keeps the source column."}]},
+
+{ id:"q-m", t:"Applied Steps & the M language", lvl:"Intermediate", min:10,
+  lead:"Each click writes a line of M. Reading it helps you fix and reuse queries.",
+  b:[
+   {code:`let
+    Source = Excel.Workbook(File.Contents("C:\\Data\\Sales.xlsx"), null, true),
+    Sales = Source{[Item="Sales",Kind="Table"]}[Data],
+    Typed = Table.TransformColumnTypes(Sales, {{"Order Date", type date}, {"Sales", type number}}),
+    Trimmed = Table.TransformColumns(Typed, {{"City", Text.Trim, type text}}),
+    Filtered = Table.SelectRows(Trimmed, each [Sales] > 0)
+in
+    Filtered`},
+   {ul:["`let … in` lists steps; each step uses the one before.","Rename steps (right-click → Rename) to describe what they do.","Click a step to see the data at that point; the gear icon reopens its dialog.","Deleting a middle step can break later steps that reference its columns.","M is case-sensitive: `Text.Trim`, not `text.trim`."]}
+  ],
+  q:[{q:"Which keyword starts the list of steps in an M query?",o:["let","in","each","CALCULATE"],a:0,w:"Queries are let … in expressions."}]},
+
+{ id:"q-profile", t:"Data profiling", lvl:"Basic", min:8,
+  lead:"Before cleaning, look. Profiling shows what is broken.",
+  b:[
+   {tbl:{h:["View option","Shows"],r:[
+    ["Column quality","% Valid, Error and Empty under each header"],
+    ["Column distribution","Distinct and unique counts with a mini histogram"],
+    ["Column profile","Full statistics and value distribution for the selected column"]]}},
+   {ul:["Turn them on in **View** ribbon.","By default profiling uses the **top 1,000 rows**; click the status bar text to switch to the entire data set.","Watch for: errors in numeric columns, many distinct spellings of one city, IDs whose distinct count is below the row count (duplicates)."]}
+  ],
+  q:[{q:"Profiling says 0% errors but refresh fails on row 50,000. Why?",o:["Profiling looked at the top 1,000 rows only","It's random","The ribbon is hidden","Wrong theme"],a:0,w:"Switch profiling to the entire data set to see all rows."}]}
+]},
+{ t:"Connecting", topics:[
+{ id:"q-connect", t:"Sources, Navigator & folders", lvl:"Basic", min:10,
+  lead:"Every query begins with a Source step. Configure it carefully.",
+  b:[
+   {ol:["**Get data** → pick the connector → choose the file or server.","The **Navigator** previews sheets, tables or database objects.","Tick one or more and click **Transform Data**.","For many files: **Folder** connector → **Combine & Transform Data** → pick a sample file.","Store paths in parameters: **Home → Manage Parameters → New Parameter**, then use it in the Source step."]},
+   {tip:"Remove columns you don't need early. Less data flows through every later step."}
+  ],
+  q:[{q:"You want one query over 12 monthly CSVs in a folder. Use…",o:["Folder connector → Combine","12 queries merged","Group By","Unpivot"],a:0,w:"The Folder connector combines every file and picks up new ones."}]},
+
+{ id:"q-folding", t:"Query folding", lvl:"Advanced", min:10,
+  lead:"With database sources, Power Query can translate your steps into one SQL query that runs at the source. That's folding, and it's much faster.",
+  b:[
+   {ul:["Right-click a step → **View Native Query**. Greyed out means that step doesn't fold.","Step indicators in the Applied Steps list show folding, not folding or unknown.","Filters, column removals, joins and group-bys usually fold.","Custom M functions, adding an index and some type changes often break folding.","Do folding-friendly steps first; put non-folding ones at the end.","Incremental refresh needs the date filter step to fold."]}
+  ],
+  q:[{q:"How do you see the SQL a step sends to the database?",o:["Right-click step → View Native Query","Advanced Editor","Column profile","Close & Apply"],a:0,w:"View Native Query shows the folded SQL."}]}
+]},
+{ t:"Cleaning", topics:[
+{ id:"q-clean", t:"Cleaning essentials", lvl:"Basic", min:15,
+  lead:"Most cleaning happens with right-click menus on column headers.",
+  b:[
+   {tbl:{h:["Task","Where / how"],r:[
+    ["Promote headers","Home → Use First Row as Headers"],
+    ["Change type","Header type icon; Using Locale for regional dates and decimals"],
+    ["Remove / keep columns","Home → Choose Columns, or Remove Other Columns"],
+    ["Remove rows","Home → Remove Rows: top, bottom, alternate, duplicates, blank, errors"],
+    ["Filter","Header dropdown: values, text filters, number filters, date filters"],
+    ["Replace values","Right-click → Replace Values"],
+    ["Replace errors","Right-click → Replace Errors"],
+    ["Clean text","Transform → Format → lowercase, UPPERCASE, Capitalize Each Word, Trim, Clean"],
+    ["Split","Transform → Split Column → By Delimiter, Number of Characters, Positions, case or digit changes"],
+    ["Fill","Right-click → Fill → Down or Up (for merged-cell exports)"],
+    ["Rename","Double-click the header"]]}},
+   {tip:"Order matters: Trim and fix case first, then Replace Values or remove duplicates. Fewer variants remain."}
+  ],
+  q:[{q:"An Excel export leaves Region only on the first row of each block. Fix?",o:["Fill Down","Unpivot","Split column","Merge"],a:0,w:"Fill Down copies the last value into the blanks below."},
+     {q:"Remove leading and trailing spaces from City?",o:["Format → Trim","Split","Pivot","Group By"],a:0,w:"Trim removes spaces at both ends."}]},
+
+{ id:"q-custom", t:"Custom, conditional & example columns", lvl:"Intermediate", min:10,
+  lead:"Add Column creates new fields: from rules, from examples or from M formulas.",
+  b:[
+   {tbl:{h:["Feature","Use"],r:[
+    ["Conditional Column","If/else rules through a dialog"],
+    ["Column From Examples","Type the result you want; Power Query writes the formula"],
+    ["Custom Column","Write an M expression"],
+    ["Index Column","Row numbers from 0 or 1"],
+    ["Date / Text / Number tools","Year, month name, length, round…"]]}},
+   {code:`// Custom Column examples
+= [First Name] & " " & [Last Name]
+= if [Sales] >= 10000 then "Large" else "Small"
+= Date.Year([Order Date])
+= Duration.Days([Ship Date] - [Order Date])`}
+  ],
+  q:[{q:"You'd rather show the result than write the formula. Use…",o:["Column From Examples","Custom Column","Index Column","Group By"],a:0,w:"Column From Examples infers the transformation."}]}
+]},
+{ t:"Combining data", topics:[
+{ id:"q-merge", t:"Merge queries", lvl:"Intermediate", min:10,
+  lead:"Merge joins two queries on matching keys and shows how many rows matched.",
+  b:[
+   {ol:["Select the first query → **Home → Merge Queries** (or as New).","Pick the second query; click the key column(s) in each (Ctrl-click for several).","Choose the join kind and read the match summary.","Expand the new table column and pick fields; untick 'Use original column name as prefix'."]},
+   {tbl:{h:["Join kind","Keeps"],r:[
+    ["Left outer","All rows of the first plus matches"],["Right outer","All rows of the second plus matches"],["Full outer","Everything"],["Inner","Matches only"],["Left anti","First-table rows with no match"],["Right anti","Second-table rows with no match"]]}},
+   {tip:"Tick **Use fuzzy matching** to match 'Hyderbad' with 'Hyderabad', and set the similarity threshold."}
+  ],
+  q:[{q:"Find customers in Orders missing from the Customer master (Orders first). Join kind?",o:["Left anti","Inner","Full outer","Right outer"],a:0,w:"Left anti returns first-table rows without a match."}]},
+
+{ id:"q-append", t:"Append queries", lvl:"Intermediate", min:8,
+  lead:"Append stacks rows from tables with the same columns.",
+  b:[
+   {ul:["**Home → Append Queries** → Two tables, or Three or more tables.","Columns are matched by name. 'Cust_ID' and 'Customer ID' become two half-empty columns.","Rename mismatched columns in each source query before appending.","Add a custom column with the source name first if you need to know where rows came from."]}
+  ],
+  q:[{q:"After appending, Customer ID is blank for half the rows and a Cust_ID column appeared. Fix?",o:["Rename Cust_ID to Customer ID before appending","Merge instead","Unpivot","Fill Down"],a:0,w:"Append matches columns by exact name."}]}
+]},
+{ t:"Shaping data", topics:[
+{ id:"q-pivot", t:"Unpivot & pivot", lvl:"Intermediate", min:8,
+  lead:"Reshape wide data to long, or long to wide.",
+  b:[
+   {ul:["**Unpivot Other Columns**: select the ID columns (e.g. Product), right-click → Unpivot Other Columns. Jan…Dec become Attribute and Value.","Unpivot Other Columns keeps working when a new month column appears; **Unpivot Columns** on fixed columns does not.","**Pivot Column**: choose the column whose values become headers and the values column and aggregation."]}
+  ],
+  q:[{q:"New month columns are added each month. Most robust step?",o:["Unpivot Other Columns on the ID columns","Unpivot Columns on Jan–Dec","Pivot Column","Split column"],a:0,w:"Unpivot Other Columns adapts to new columns."}]},
+
+{ id:"q-group", t:"Group By", lvl:"Intermediate", min:8,
+  lead:"Change the grain: from order lines to customers, days to months.",
+  b:[
+   {ol:["**Home (or Transform) → Group By**.","Basic: one grouping column, one aggregation.","Advanced: several grouping columns and several aggregations (Sum, Average, Median, Min, Max, Count Rows, Count Distinct Rows, All Rows)."]},
+   {tip:"**All Rows** keeps the detail rows nested inside each group. Expand them later, or use it to rank within groups."}
+  ],
+  q:[{q:"In Group By, which operation counts unique values?",o:["Count Distinct Rows","Sum","All Rows","Max"],a:0,w:"Count Distinct Rows counts unique rows in each group."}]},
+
+{ id:"q-functions", t:"Reference, duplicate, parameters & functions", lvl:"Advanced", min:10,
+  lead:"Reuse logic instead of copying it.",
+  b:[
+   {tbl:{h:["Action","Effect"],r:[
+    ["Duplicate","Independent copy of every step"],
+    ["Reference","New query that starts from another's result; changes upstream flow down"],
+    ["Parameter","A named value (path, server, date) used in steps"],
+    ["Custom function","A query that takes inputs; Invoke Custom Function per row"],
+    ["Disable load","Keep helper or staging queries out of the model"]]}},
+   {code:`// fxCleanCity: a reusable function
+(city as text) as text =>
+    Text.Proper ( Text.Trim ( city ) )`}
+  ],
+  q:[{q:"You want a query that always starts from the cleaned Sales query and follows its changes. Use…",o:["Reference","Duplicate","Append","Fill Down"],a:0,w:"Reference builds on the other query's output."}]}
+]},
+{ t:"Load & automate", topics:[
+{ id:"q-load", t:"Load to the model", lvl:"Basic", min:6,
+  lead:"A query does nothing until it's loaded.",
+  b:[
+   {ul:["Power BI: **Home → Close & Apply**; Apply alone keeps the editor open.","Right-click a query → untick **Enable load** for staging queries.","Untick **Include in report refresh** for static lookups that never change.","Excel: **Close & Load To** → Table, PivotTable, Only Create Connection, or Add to Data Model."]}
+  ],
+  q:[{q:"A helper query should feed others but not appear as a table in the model. You…",o:["Untick Enable load","Delete it","Rename it","Pivot it"],a:0,w:"Disabled-load queries still run for dependants."}]},
+
+{ id:"q-dataflow", t:"Dataflows & incremental refresh", lvl:"Advanced", min:10,
+  lead:"Move Power Query to the cloud so many models reuse one cleaned table.",
+  b:[
+   {ul:["In a workspace: **New item → Dataflow Gen2** (Fabric) or a Power BI dataflow.","Build queries in the browser editor; same steps and M as Desktop.","Schedule refresh on the dataflow; models connect with the Dataflows connector.","**Incremental refresh**: create DateTime parameters named **RangeStart** and **RangeEnd**, filter the date column with them, then set the policy on the table in Desktop."]},
+   {warn:"Parameter names must be exactly RangeStart and RangeEnd, of type Date/Time, for incremental refresh to work."}
+  ],
+  q:[{q:"Which two parameters does incremental refresh need?",o:["RangeStart and RangeEnd","StartDate and EndDate","From and To","Min and Max"],a:0,w:"Power BI looks for those exact names."}]},
+
+{ id:"q-recipe", t:"An end-to-end recipe", lvl:"Intermediate", min:10,
+  lead:"A typical query chain from raw files to a model-ready table.",
+  b:[
+   {ol:["**Folder** source with a path parameter; Combine monthly CSVs.","**Clean**: promote headers, set types with locale, Trim and Capitalize City, remove blank rows.","**Merge** with Products (Left outer); Left anti check for missing IDs in a separate query.","**Add Column**: Margin = [Profit] / [Sales]; Order Year.","**Reference** a Customers query → Group By Customer ID for totals.","Disable load on staging queries.","**Close & Apply** and build the report."]}
+  ],
+  q:[{q:"Where should you remove unneeded columns for best performance?",o:["As early as possible","At the end","In DAX","Never"],a:0,w:"Early removal speeds every later step."}]}
+]}
+],
+days:[
+ {t:"Power Query basics & the editor", topics:["q-what","q-ui","q-m"], goals:["Explain Power Query's role","Name the editor areas","Read a let … in query"], task:"Open a query in the Advanced Editor and rename every step to describe what it does."},
+ {t:"Connect & profile", topics:["q-connect","q-profile"], goals:["Use the Navigator and Folder connector","Use parameters","Read profiling views"], task:"Connect to a messy CSV (make one: inconsistent city names, blanks, text numbers). Turn on all profiling views over the entire data set and list every problem."},
+ {t:"Cleaning", topics:["q-clean"], goals:["Use every cleaning menu","Fix types with locale","Fill, split and replace"], task:"Fix every problem you found yesterday. Your Applied Steps should show at least 10 named steps."},
+ {t:"Combining: merge & append", topics:["q-merge","q-append"], goals:["Choose join kinds","Use fuzzy matching","Append with matching headers"], task:"Append three monthly files with slightly different headers, then merge with a lookup table. Use a Left anti merge to list missing IDs."},
+ {t:"Shaping: unpivot & group", topics:["q-pivot","q-group","q-custom"], goals:["Unpivot wide data","Change grain with Group By","Add custom columns"], task:"Unpivot a month-per-column budget sheet, group actuals to monthly, and merge budget vs actual."},
+ {t:"Reuse & performance", topics:["q-functions","q-folding"], goals:["Reference vs duplicate","Write a custom function","Check query folding"], task:"Turn your city-cleaning steps into a custom function and invoke it on two queries. If you have a database source, check which steps fold."},
+ {t:"Load, automate & capstone", topics:["q-load","q-dataflow","q-recipe"], review:["q-clean","q-merge","q-pivot"], goals:["Load only what's needed","Plan dataflows and incremental refresh","Run an end-to-end chain"], task:"Build the end-to-end recipe on your own data, disable load on staging queries, then build one report page on the result."}
+]
+}
+
+}}
+};
+
+/* Lab data ------------------------------------------------------ */
+const CHART_GOALS = [
+ {g:"Compare categories", c:"Clustered bar chart", k:"bar", why:"Lengths are easy to compare; sorting shows the order instantly.", how:"Category on Y-axis, measure on X-axis, sort descending from the … menu.", avoid:"Pie or donut charts with more than five slices."},
+ {g:"Show a trend over time", c:"Line chart", k:"line", why:"A line connects points through time so the eye follows the direction.", how:"Date (or Date table column) on X-axis, measure on Y-axis.", avoid:"Columns for long daily series."},
+ {g:"Show part of a whole", c:"Stacked bar or treemap", k:"stack", why:"Shows the total and its pieces together.", how:"Category on the axis, measure on Values, second category on Legend.", avoid:"3-D effects, donuts with many slices."},
+ {g:"Explain a change", c:"Waterfall chart", k:"waterfall", why:"Each step up or down from start to finish is visible.", how:"Category on Category, measure on Y-axis, optional Breakdown field.", avoid:"A table of differences."},
+ {g:"Show a distribution", c:"Column chart of bins", k:"hist", why:"Reveals the shape: spread, skew and outliers.", how:"New group → Bin on a numeric column; bins on X-axis, count on Y-axis.", avoid:"Reporting only the average."},
+ {g:"Relationship between two measures", c:"Scatter chart", k:"scatter", why:"Each dot is one item; patterns and clusters appear.", how:"Item in Values, one measure on X, one on Y. Add a trend line from Analytics.", avoid:"Two lines on unrelated scales."},
+ {g:"Show location", c:"Azure Maps", k:"map", why:"Geography is the pattern.", how:"Set the data category, put the column in Location, a measure in Size or use the filled layer.", avoid:"Filled shapes of raw totals (big areas dominate)."},
+ {g:"Look up exact values", c:"Matrix with conditional formatting", k:"table", why:"People can read the number while color draws the eye.", how:"Rows and Columns fields, measure in Values, Cell elements → background color.", avoid:"Charts when exact values matter most."},
+ {g:"Actual vs target", c:"KPI visual or bar with target line", k:"bullet", why:"Shows the value, the goal and whether you're on track.", how:"KPI: Value, Trend axis and Target measures; or a bar chart plus a constant line.", avoid:"Gauges on every page."},
+ {g:"Schedule or duration", c:"Gantt (AppSource visual)", k:"gantt", why:"Start and length of each task on a time axis.", how:"Get more visuals → Gantt; Task, Start date, Duration fields.", avoid:"Stacked bars faking a timeline."},
+ {g:"Two measures, different scales", c:"Line and clustered column", k:"combo", why:"Columns for volume, a line for a rate, each on its own axis.", how:"Column y-axis: one measure; Line y-axis: the other; turn on the secondary axis.", avoid:"Unlabelled axes that mislead."}
+];
+
+const PILL_FIELDS = [
+ {f:"Total Sales", a:"m", w:"Sums many rows and must react to every slicer."},
+ {f:"Full Name", a:"d", w:"A fixed value per customer row; better still, build it in Power Query."},
+ {f:"Profit %", a:"m", w:"A ratio of sums. As a column it would average row ratios, which is wrong."},
+ {f:"Age Band", a:"d", w:"You slice by it, so each customer row needs a value."},
+ {f:"YoY Growth", a:"m", w:"Compares filtered periods, so it must be calculated at query time."},
+ {f:"Is Weekend", a:"d", w:"A True/False per date row, used as a filter."},
+ {f:"Distinct Customers", a:"m", w:"DISTINCTCOUNT changes with the filter context."},
+ {f:"Price Tier", a:"d", w:"Low/Mid/High per product for a slicer."},
+ {f:"Running Total", a:"m", w:"Accumulates over what's in the visual."},
+ {f:"Month Name", a:"d", w:"A label on the date table, sorted by Month Number."},
+ {f:"% of Grand Total", a:"m", w:"Needs CALCULATE to remove filters at query time."},
+ {f:"Order Size Category", a:"d", w:"Small/Large per order line, used on an axis or slicer."}
+];
+
+</script>
+<script>
+(function(){
+const PLATFORM = "powerbi";
+const PRODUCTS = COURSES[PLATFORM].products;
+const PKEYS = Object.keys(PRODUCTS);
+
+/* ---------- state ---------- */
+/* Every page load (and the Start over button) begins from this initial state. */
+const INITIAL = () => ({product:"desktop", mode:"general", cur:{}, day:{}, learned:{}, done:{}, quiz:{}, pills:{}, goal:0, openMods:{}});
+let S = INITIAL();
+function save(){}
+
+/* ---------- index ---------- */
+const IDX = {}; const ORDER = {};
+PKEYS.forEach(pk => {
+  ORDER[pk] = [];
+  PRODUCTS[pk].modules.forEach((m, mi) => m.topics.forEach((t, ti) => {
+    IDX[t.id] = {t, m, mi, ti, pk, num:(mi+1) + "." + (ti+1)};
+    ORDER[pk].push(t.id);
+  }));
+});
+
+/* ---------- helpers ---------- */
+const $ = (s, el=document) => el.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function fmt(s){
+  return esc(s)
+    .replace(/\[\[([^\]|]+)\|([dm])\]\]/g, (_, t, k) => '<span class="pill ' + k + '">' + t + '</span>')
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>");
+}
+const P = () => PRODUCTS[S.product];
+function learnedCount(pk){ return ORDER[pk].filter(id => S.learned[id]).length; }
+function dayDone(pk, n){ return !!S.done[pk + "-" + n]; }
+function firstOpenDay(pk){ const d = PRODUCTS[pk].days; for (let i=0;i<d.length;i++) if (!dayDone(pk,i+1)) return i+1; return d.length; }
+
+/* ---------- glyphs ---------- */
+function glyph(k){
+  let g = '<line x1="6" y1="54" x2="90" y2="54" class="ax"/>';
+  const bars = (hs, w, gap, x0, cls) => hs.map((h,i)=>'<rect x="'+(x0+i*gap)+'" y="'+(54-h)+'" width="'+w+'" height="'+h+'" rx="1" class="'+(cls||"g1")+'"/>').join("");
+  switch(k){
+    case "bar": g += bars([42,30,24,16,9],12,17,9); break;
+    case "line": g += '<polyline points="8,46 22,38 36,41 50,27 64,30 78,18 90,12" class="gl"/>'; break;
+    case "stack": [[22,14],[28,10],[16,18],[24,12]].forEach(([a,b],i)=>{const x=12+i*20; g+='<rect x="'+x+'" y="'+(54-a)+'" width="14" height="'+a+'" class="g1"/><rect x="'+x+'" y="'+(54-a-b)+'" width="14" height="'+b+'" class="g2"/>';}); break;
+    case "hist": g += bars([6,14,26,40,34,22,11,5],10,10.5,7); break;
+    case "scatter": [[14,46],[22,40],[30,42],[38,32],[46,34],[54,24],[62,27],[72,17],[82,13],[44,40],[66,20]].forEach(([x,y])=>g+='<circle cx="'+x+'" cy="'+y+'" r="3" class="g1"/>'); g+='<line x1="10" y1="48" x2="88" y2="10" class="gt"/>'; break;
+    case "map": g = '<path d="M12 22 Q22 8 42 12 T72 10 Q90 16 86 32 Q82 50 58 50 Q38 54 24 46 Q8 38 12 22Z" class="gb"/>'; [[30,22,6],[52,20,4],[66,34,8],[40,38,3],[74,20,3]].forEach(([x,y,r])=>g+='<circle cx="'+x+'" cy="'+y+'" r="'+r+'" class="g1" opacity=".85"/>'); break;
+    case "table": g=''; for(let r=0;r<4;r++) for(let c=0;c<5;c++){ const o=[.25,.5,.9,.4,.7,.3,.95,.55,.2,.8][(r*5+c)%10]; g+='<rect x="'+(8+c*16.5)+'" y="'+(6+r*12.5)+'" width="15" height="11" class="g1" opacity="'+o+'"/>'; } break;
+    case "bullet": g=''; [[70,52,60],[80,64,58],[60,30,50]].forEach(([bg,v,t],i)=>{const y=8+i*16; g+='<rect x="8" y="'+y+'" width="'+bg+'" height="12" class="gb"/><rect x="8" y="'+(y+3)+'" width="'+v+'" height="6" class="g1"/><rect x="'+(8+t)+'" y="'+(y-1)+'" width="2.5" height="14" class="g3"/>';}); break;
+    case "gantt": g=''; [[8,30],[30,22],[44,30],[60,26]].forEach(([x,w],i)=>g+='<rect x="'+x+'" y="'+(8+i*12)+'" width="'+w+'" height="8" rx="2" class="'+(i%2?"g2":"g1")+'"/>'); break;
+    case "box": [[20,18,34,12,44],[48,10,26,6,38],[76,22,38,14,48]].forEach(([x,q1,q3,lo,hi])=>{g+='<line x1="'+x+'" y1="'+lo+'" x2="'+x+'" y2="'+hi+'" class="ax" style="stroke:var(--muted)"/><rect x="'+(x-8)+'" y="'+q1+'" width="16" height="'+(q3-q1)+'" class="g1" opacity=".75"/><line x1="'+(x-8)+'" y1="'+((q1+q3)/2)+'" x2="'+(x+8)+'" y2="'+((q1+q3)/2)+'" style="stroke:var(--surface);stroke-width:2"/>';}); break;
+    case "waterfall": g += '<rect x="9" y="28" width="12" height="26" class="g1"/><rect x="26" y="16" width="12" height="12" class="g2"/><rect x="43" y="16" width="12" height="8" class="g3"/><rect x="60" y="14" width="12" height="10" class="g2"/><rect x="77" y="14" width="12" height="40" class="g1"/>'; break;
+    case "combo": g += bars([30,36,26,40,34],11,16,10); g += '<polyline points="15,30 31,22 47,28 63,14 79,18" class="gl" style="stroke:var(--accent)"/>'; break;
+  }
+  return '<svg viewBox="0 0 96 60" class="glyph" aria-hidden="true">' + g + '</svg>';
+}
+
+/* ---------- labs ---------- */
+function chartLab(){
+  const gi = Math.min(S.goal||0, CHART_GOALS.length-1);
+  return '<div class="lab" data-lab="chart"><div class="lab-h"><span class="tag">Lab</span><h3>Chart chooser</h3></div>' +
+    '<p class="pace">Pick what you want to show. The lab recommends a chart and how to build it.</p>' +
+    '<div class="goals">' + CHART_GOALS.map((g,i)=>'<button type="button" class="goal'+(i===gi?' on':'')+'" data-goal="'+i+'">'+esc(g.g)+'</button>').join("") + '</div>' +
+    '<div class="cc-out">' + chartOut(gi) + '</div></div>';
+}
+function chartOut(i){
+  const g = CHART_GOALS[i];
+  return glyph(g.k) + '<div><span class="lbl">Recommended</span><h4>'+esc(g.c)+'</h4><p>'+esc(g.why)+'</p><p><span class="lbl">Build</span><br>'+esc(g.how)+'</p><p><span class="lbl">Avoid</span><br>'+esc(g.avoid)+'</p></div>';
+}
+function pillLab(){
+  let right = 0, answered = 0;
+  const rows = PILL_FIELDS.map((p,i)=>{
+    const pick = S.pills[i];
+    if (pick){ answered++; if (pick===p.a) right++; }
+    const res = pick ? '<span class="res">'+(pick===p.a?'<b class="ok">Correct.</b> ':'<b class="no">Not quite.</b> ')+esc(p.w)+'</span>' : '';
+    const pillName = pick ? '<span class="pill '+p.a+'">'+esc(p.f)+'</span>' : esc(p.f);
+    return '<div class="pf'+(pick?' done':'')+'"><span class="name">'+pillName+'</span>' +
+      (pick ? '' : '<button type="button" data-pill="'+i+'" data-pick="d">Column</button><button type="button" class="m" data-pill="'+i+'" data-pick="m">Measure</button>') + res + '</div>';
+  }).join("");
+  return '<div class="lab" data-lab="pills"><div class="lab-h"><span class="tag">Lab</span><h3>Sorter: column or measure?</h3><span class="score" style="margin-left:auto">'+right+' / '+PILL_FIELDS.length+' correct · '+answered+' answered</span></div>' +
+    '<div class="pills-grid">' + rows + '</div>' +
+    (answered ? '<button type="button" class="retry" data-pillreset="1">Start over</button>' : '') + '</div>';
+}
+
+/* ---------- blocks ---------- */
+function block(b){
+  if (b.p) return '<p>'+fmt(b.p)+'</p>';
+  if (b.h) return '<h3>'+fmt(b.h)+'</h3>';
+  if (b.ul) return '<ul>'+b.ul.map(x=>'<li>'+fmt(x)+'</li>').join("")+'</ul>';
+  if (b.ol) return '<ol>'+b.ol.map(x=>'<li>'+fmt(x)+'</li>').join("")+'</ol>';
+  if (b.tbl) return '<div class="tblwrap"><table><thead><tr>'+b.tbl.h.map(h=>'<th>'+fmt(h)+'</th>').join("")+'</tr></thead><tbody>'+b.tbl.r.map(r=>'<tr>'+r.map(c=>'<td>'+fmt(c)+'</td>').join("")+'</tr>').join("")+'</tbody></table></div>';
+  if (b.tip) return '<div class="note tip"><b class="lbl">Tip</b><span>'+fmt(b.tip)+'</span></div>';
+  if (b.warn) return '<div class="note warn"><b class="lbl">Watch out</b><span>'+fmt(b.warn)+'</span></div>';
+  if (b.try) return '<div class="note try"><b class="lbl">Try it</b><span>'+fmt(b.try)+'</span></div>';
+  if (b.code) return '<pre>'+esc(b.code)+'</pre>';
+  if (b.lab === "chart") return chartLab();
+  if (b.lab === "pills") return pillLab();
+  return "";
+}
+
+/* ---------- quiz ---------- */
+function quizCard(tid, i){
+  const qq = IDX[tid].t.q[i]; const key = tid + "#" + i; const pick = S.quiz[key];
+  const answered = pick !== undefined;
+  const opts = qq.o.map((o,oi)=>{
+    let cls = "opt";
+    if (answered){ if (oi===qq.a) cls+=" right"; else if (oi===pick) cls+=" wrong"; }
+    return '<button type="button" class="'+cls+'" data-q="'+key+'" data-o="'+oi+'"'+(answered?' disabled':'')+'>'+fmt(o)+'</button>';
+  }).join("");
+  const why = answered ? '<div class="why"><b>'+(pick===qq.a?'Correct. ':'The answer is: '+esc(qq.o[qq.a])+'. ')+'</b>'+fmt(qq.w)+'</div><button type="button" class="retry" data-qreset="'+key+'">Try again</button>' : '';
+  return '<div class="qcard" data-qcard="'+key+'"><p>'+fmt(qq.q)+'</p><div class="opts">'+opts+'</div>'+why+'</div>';
+}
+function quizSection(ids, title){
+  const cards = [];
+  ids.forEach(id => (IDX[id].t.q||[]).forEach((_,i)=>cards.push(quizCard(id,i))));
+  if (!cards.length) return "";
+  return '<section class="quiz"><h3>'+esc(title)+' <span class="score">'+cards.length+' question'+(cards.length>1?'s':'')+'</span></h3>'+cards.join("")+'</section>';
+}
+
+/* ---------- lesson ---------- */
+function lessonHTML(id, opt){
+  opt = opt || {};
+  const x = IDX[id], t = x.t, on = !!S.learned[id];
+  let h = '<div class="lesson-head">';
+  if (!opt.compact) h += '<span class="eyebrow">Module '+(x.mi+1)+' · '+esc(x.m.t)+'</span>';
+  h += '<h2>'+(opt.compact?'':'<span style="color:var(--muted);font-weight:500">'+x.num+'</span> ')+esc(t.t)+'</h2>';
+  h += '<div class="meta"><span class="tag '+t.lvl+'">'+t.lvl+'</span><span class="tag">~'+t.min+' min</span>' +
+       '<button type="button" class="learn-btn'+(on?' on':'')+'" data-learn="'+id+'" aria-pressed="'+on+'">'+(on?'✓ Learned':'Mark as learned')+'</button></div></div>';
+  h += '<p class="lead">'+fmt(t.lead)+'</p>';
+  h += '<div class="body">'+t.b.map(block).join("")+'</div>';
+  if (!opt.noQuiz) h += quizSection([id], "Quick check");
+  return h;
+}
+
+/* ---------- top bar ---------- */
+function renderShelves(){
+  $("#productPills").innerHTML = PKEYS.map(pk=>'<button type="button" class="spill'+(pk===S.product?' on':'')+'" data-product="'+pk+'" aria-pressed="'+(pk===S.product)+'">'+esc(PRODUCTS[pk].short)+'</button>').join("");
+  $("#modePills").innerHTML =
+    '<button type="button" class="spill m'+(S.mode==='general'?' on':'')+'" data-mode="general" aria-pressed="'+(S.mode==='general')+'">General</button>' +
+    '<button type="button" class="spill m'+(S.mode==='plan'?' on':'')+'" data-mode="plan" aria-pressed="'+(S.mode==='plan')+'">Time-bounded</button>';
+}
+function renderIntro(){
+  const p = P(), topics = ORDER[S.product].length, mins = ORDER[S.product].reduce((a,id)=>a+IDX[id].t.min,0);
+  $("#intro").innerHTML = '<h2>'+esc(p.label)+'</h2><span class="eyebrow">'+(S.mode==='general'?'General · explore in sequence':'Time-bounded · '+p.days.length+'-day plan')+'</span><p>'+esc(p.blurb)+'</p>' +
+    '<span class="stats">'+p.modules.length+' modules · '+topics+' topics · '+p.days.length+' days · ~'+Math.round(mins/60)+'h reading</span>';
+}
+
+/* ---------- general mode ---------- */
+let filterText = "";
+function tocHTML(){
+  const pk = S.product, cur = S.cur[pk] || ORDER[pk][0], f = filterText.trim().toLowerCase();
+  let any = false;
+  const html = P().modules.map((m,mi)=>{
+    const items = m.topics.filter(t => !f || (t.t + " " + t.lead + " " + JSON.stringify(t.b)).toLowerCase().includes(f));
+    if (!items.length) return "";
+    any = true;
+    const done = m.topics.filter(t=>S.learned[t.id]).length;
+    const open = f || !!S.openMods[pk+'|'+mi];
+    return '<details class="mod" data-mod="'+pk+'|'+mi+'"'+(open?' open':'')+'><summary><span class="caret">▶</span>'+(mi+1)+'. '+esc(m.t)+'<span class="cnt">'+done+'/'+m.topics.length+'</span></summary>' +
+      items.map(t=>'<button type="button" class="titem'+(t.id===cur?' cur':'')+'" data-topic="'+t.id+'"><span class="num">'+IDX[t.id].num+'</span><span>'+esc(t.t)+'</span>'+(S.learned[t.id]?'<span class="ok">✓</span>':'')+'</button>').join("") + '</details>';
+  }).join("");
+  return any ? html : '<div class="toc-empty">No topics match “'+esc(filterText)+'”.</div>';
+}
+function renderGeneral(){
+  const pk = S.product;
+  if (!S.cur[pk] || !IDX[S.cur[pk]]) S.cur[pk] = ORDER[pk][0];
+  const id = S.cur[pk], i = ORDER[pk].indexOf(id);
+  const prev = ORDER[pk][i-1], next = ORDER[pk][i+1];
+  const nav = '<div class="navrow">' +
+    (prev ? '<button type="button" class="navbtn" data-topic="'+prev+'"><small>← Previous</small>'+esc(IDX[prev].t.t)+'</button>' : '') +
+    (next ? '<button type="button" class="navbtn next" data-topic="'+next+'"><small>Next →</small>'+esc(IDX[next].t.t)+'</button>' : '<span class="pace">You reached the end of this track. Try Time-bounded mode for daily practice tasks.</span>') + '</div>';
+  $("#view").innerHTML = '<div class="general">' +
+    '<aside class="pane" id="pane"><button type="button" class="pane-toggle" id="paneToggle" aria-expanded="false">Topics · '+IDX[id].num+' '+esc(IDX[id].t.t)+'<span>▾</span></button>' +
+    '<div class="pane-head"><label for="search">Search topics</label><input class="search" id="search" type="search" placeholder="e.g. CALCULATE, merge, .pbix" value="'+esc(filterText)+'"></div>' +
+    '<div class="toc" id="toc">'+tocHTML()+'</div></aside>' +
+    '<article class="lesson" id="lesson">'+lessonHTML(id)+nav+'</article></div>';
+}
+
+/* ---------- plan mode ---------- */
+function renderPlan(){
+  const pk = S.product, days = P().days;
+  let n = S.day[pk] || firstOpenDay(pk); if (n > days.length) n = days.length; S.day[pk] = n;
+  const d = days[n-1], current = firstOpenDay(pk);
+  const shelf = '<div class="dayshelf" role="tablist" aria-label="Days"><span class="shelf-label"><svg viewBox="0 0 14 14"><rect x="1" y="2" width="12" height="11" rx="1" fill="none" stroke="var(--muted)" stroke-width="1.5"/><rect x="1" y="2" width="12" height="3" fill="var(--muted)"/></svg>Days</span><div class="days">' +
+    days.map((_,i)=>{const k=i+1; return '<button type="button" role="tab" aria-selected="'+(k===n)+'" class="dpill'+(dayDone(pk,k)?' done':'')+(k===n?' on':'')+(k===current&&!dayDone(pk,k)?' cur':'')+'" data-day="'+k+'">'+(dayDone(pk,k)?'✓ ':'')+'Day '+k+'</button>';}).join("") + '</div></div>';
+  const mins = d.topics.reduce((a,id)=>a+IDX[id].t.min,0) + 30;
+  const lessons = d.topics.map((id,i)=>'<details class="acc" data-acc="'+id+'"><summary><span class="caret">▶</span><span class="num">'+(i+1)+'</span>'+esc(IDX[id].t.t)+'<span class="ok">'+(S.learned[id]?'✓ learned':'')+'</span></summary><div class="acc-body">'+lessonHTML(id,{compact:true,noQuiz:true})+'</div></details>').join("");
+  const reviewIds = d.topics.concat(d.review||[]);
+  const doneNow = dayDone(pk,n);
+  const main = '<div class="daymain">' +
+    '<div class="dayhead"><span class="eyebrow">Day '+n+' of '+days.length+(n===current&&!doneNow?' · your current day':'')+'</span><h2>'+esc(d.t)+'</h2>' +
+    '<div class="meta"><span class="tag">'+(d.topics.length?d.topics.length+' lesson'+(d.topics.length>1?'s':''):'Project day')+'</span><span class="tag">~'+mins+' min incl. task</span>'+(doneNow?'<span class="tag Basic" style="background:var(--mea-bg);color:var(--mea)">Completed</span>':'')+'</div></div>' +
+    (lessons ? '<div class="sectionlbl"><h3>Today\'s lessons</h3><span class="pace">Open each one, then mark it learned.</span></div>' + lessons : '') +
+    '<div class="task"><b class="lbl">Hands-on task</b><p>'+fmt(d.task)+'</p></div>' +
+    quizSection(reviewIds, d.review && !d.topics.length ? "Final checkpoint" : "Day "+n+" checkpoint") +
+    '<div class="daybtns"><button type="button" class="btn'+(doneNow?' done':'')+'" data-doneday="'+n+'">'+(doneNow?'✓ Day '+n+' complete':'Mark Day '+n+' complete')+'</button>' +
+    (n < days.length ? '<button type="button" class="btn ghost" data-day="'+(n+1)+'">Go to Day '+(n+1)+' →</button>' : '') + '</div></div>';
+  const side = '<aside class="side">' +
+    '<div class="card"><h3>Goals for today</h3><ul class="goals-list">'+d.goals.map(g=>'<li>'+fmt(g)+'</li>').join("")+'</ul></div>' +
+    '<div class="card"><h3>The whole plan</h3><p class="pace">About 60–90 minutes a day. Days are open in any order; your current day is outlined.</p><ul class="timeline">' +
+    days.map((x,i)=>'<li><button type="button" class="'+(i+1===n?'on':'')+'" data-day="'+(i+1)+'"><span class="dn">Day '+(i+1)+'</span><span>'+esc(x.t)+'</span>'+(dayDone(pk,i+1)?'<span class="ok">✓</span>':'')+'</button></li>').join("") + '</ul></div></aside>';
+  $("#view").innerHTML = shelf + '<div class="dayview" style="margin-top:14px">' + main + side + '</div>';
+}
+
+/* ---------- render ---------- */
+function render(keepOpen){
+  const open = keepOpen ? [...document.querySelectorAll("details.acc[open]")].map(e=>e.dataset.acc) : [];
+  const paneOpen = keepOpen && $("#pane") && $("#pane").classList.contains("open");
+  renderShelves(); renderIntro();
+  if (S.mode === "general") renderGeneral(); else renderPlan();
+  open.forEach(id => { const el = document.querySelector('details.acc[data-acc="'+id+'"]'); if (el) el.open = true; });
+  if (paneOpen && $("#pane")) { $("#pane").classList.add("open"); $("#paneToggle").setAttribute("aria-expanded","true"); }
+  setMH();
+}
+function setMH(){ const m = $("#masthead"); if (m) document.documentElement.style.setProperty("--mh", m.offsetHeight + "px"); }
+window.addEventListener("resize", setMH);
+
+/* ---------- theme ---------- */
+const SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+const MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+function isDark(){ const a = document.documentElement.getAttribute("data-theme"); if (a) return a === "dark"; return !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches); }
+function paintThemeBtn(){ const b = $("#themeBtn"), d = isDark(); b.innerHTML = d ? SUN : MOON; b.title = d ? "Switch to light theme" : "Switch to dark theme"; b.setAttribute("aria-label", b.title); }
+
+/* ---------- events ---------- */
+document.addEventListener("click", e => {
+  const t = e.target.closest("button"); if (!t) return;
+  const ds = t.dataset;
+  if (ds.product){ S.product = ds.product; filterText = ""; render(); return; }
+  if (ds.mode){ S.mode = ds.mode; render(); return; }
+  if (ds.topic){ S.cur[S.product] = ds.topic; openModOf(ds.topic); render(true); const l=$("#lesson"); if (l && window.innerWidth<900) l.scrollIntoView({behavior:"smooth",block:"start"}); else window.scrollTo({top:0,behavior:"smooth"}); return; }
+  if (ds.learn){ if (S.learned[ds.learn]) delete S.learned[ds.learn]; else S.learned[ds.learn] = 1; render(true); return; }
+  if (ds.day){ S.day[S.product] = +ds.day; render(); window.scrollTo({top:0,behavior:"smooth"}); return; }
+  if (ds.doneday){ const k = S.product+"-"+ds.doneday; if (S.done[k]) delete S.done[k]; else { S.done[k]=1; const d=P().days[+ds.doneday-1]; d.topics.forEach(id=>S.learned[id]=1); } render(true); return; }
+  if (ds.q !== undefined && ds.o !== undefined){ S.quiz[ds.q] = +ds.o; save(); const [tid,qi] = ds.q.split("#"); const card = t.closest(".qcard"); card.outerHTML = quizCard(tid,+qi); return; }
+  if (ds.qreset){ delete S.quiz[ds.qreset]; save(); const [tid,qi] = ds.qreset.split("#"); t.closest(".qcard").outerHTML = quizCard(tid,+qi); return; }
+  if (ds.goal !== undefined){ S.goal = +ds.goal; save(); const lab = t.closest(".lab"); lab.querySelectorAll(".goal").forEach((b,i)=>b.classList.toggle("on", i===S.goal)); lab.querySelector(".cc-out").innerHTML = chartOut(S.goal); return; }
+  if (ds.pill !== undefined){ S.pills[ds.pill] = ds.pick; save(); t.closest(".lab").outerHTML = pillLab(); return; }
+  if (ds.pillreset){ S.pills = {}; save(); t.closest(".lab").outerHTML = pillLab(); return; }
+  if (t.id === "paneToggle"){ const p = $("#pane"); p.classList.toggle("open"); t.setAttribute("aria-expanded", p.classList.contains("open")); return; }
+  if (t.id === "themeBtn"){ document.documentElement.setAttribute("data-theme", isDark() ? "light" : "dark"); paintThemeBtn(); return; }
+  if (t.id === "restartBtn"){ S = INITIAL(); filterText = ""; render(); window.scrollTo({top:0,behavior:"smooth"}); return; }
+});
+document.addEventListener("input", e => {
+  if (e.target.id === "gsearch"){ gRender(); return; }
+  if (e.target.id === "search"){ filterText = e.target.value; $("#toc").innerHTML = tocHTML(); }
+});
+
+/* ---------- global search ---------- */
+const PLAIN = s => String(s).replace(/\[\[([^\]|]+)\|[dm]\]\]/g,"$1").replace(/\*\*|`/g,"");
+function flat(v){ if (v == null) return ""; if (typeof v === "string") return PLAIN(v); if (Array.isArray(v)) return v.map(flat).join(" "); if (typeof v === "object") return Object.values(v).map(flat).join(" "); return ""; }
+const SIDX = Object.values(IDX).map(x => ({id:x.t.id, pk:x.pk, title:x.t.t, lead:PLAIN(x.t.lead),
+  text:(x.t.t+" "+PLAIN(x.t.lead)+" "+flat(x.t.b)+" "+flat(x.t.q)).replace(/\s+/g," ")}));
+let gHits = [], gAct = 0;
+function hl(str, terms){ let h = esc(str); terms.forEach(t => { if (!t) return; h = h.replace(new RegExp("(" + t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&") + ")","ig"), "<mark>$1</mark>"); }); return h; }
+function snippet(text, term){
+  const i = text.toLowerCase().indexOf(term); if (i < 0) return "";
+  const a = Math.max(0, i - 50), b = Math.min(text.length, i + term.length + 70);
+  return (a ? "…" : "") + text.slice(a, b) + (b < text.length ? "…" : "");
+}
+function gSearch(q){
+  const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!terms.length) return [];
+  return SIDX.map(r => {
+    const tl = r.title.toLowerCase(), tx = r.text.toLowerCase();
+    if (!terms.every(t => tx.includes(t))) return null;
+    let score = 0;
+    terms.forEach(t => { if (tl.includes(t)) score += 10; if (tl.startsWith(t)) score += 5; if (r.lead.toLowerCase().includes(t)) score += 3; score += Math.min(5, tx.split(t).length - 1); });
+    if (r.pk === S.product) score += 2;
+    return {r, score};
+  }).filter(Boolean).sort((a,b) => b.score - a.score).slice(0, 25);
+}
+function gRender(){
+  const box = $("#gres"), inp = $("#gsearch"), q = inp.value.trim();
+  if (!q){ box.hidden = true; inp.setAttribute("aria-expanded","false"); return; }
+  gHits = gSearch(q); gAct = 0;
+  const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+  let h = '<div class="gres-head"><span>'+gHits.length+(gHits.length===25?'+':'')+' topic'+(gHits.length===1?'':'s')+'</span><span>↑↓ to move · Enter to open · Esc to close</span></div>';
+  if (!gHits.length) h += '<div class="gres-empty">No topics match “'+esc(q)+'”. Try a shorter word, such as a function name or a menu name.</div>';
+  h += gHits.map((x,i) => {
+    const r = x.r, m = IDX[r.id], tl = r.title.toLowerCase();
+    const missing = terms.find(t => !tl.includes(t));
+    const snip = missing ? snippet(r.text, missing) : r.lead;
+    return '<button type="button" class="gres-item'+(i===0?' act':'')+'" data-goto="'+r.id+'"><span class="gt"><span class="gp">'+esc(PRODUCTS[r.pk].short)+'</span>'+hl(r.title, terms)+'</span><span class="gm">'+m.num+' · '+esc(m.m.t)+' · '+m.t.lvl+'</span><span class="gs">'+hl(snip, terms)+'</span></button>';
+  }).join("");
+  box.innerHTML = h; box.hidden = false; inp.setAttribute("aria-expanded","true");
+}
+function gMove(d){
+  const items = [...document.querySelectorAll(".gres-item")]; if (!items.length) return;
+  gAct = (gAct + d + items.length) % items.length;
+  items.forEach((el,i) => el.classList.toggle("act", i === gAct)); items[gAct].scrollIntoView({block:"nearest"});
+}
+function gClose(){ $("#gres").hidden = true; $("#gsearch").setAttribute("aria-expanded","false"); }
+function gOpen(id){
+  const x = IDX[id]; if (!x) return;
+  S.product = x.pk; S.mode = "general"; S.cur[x.pk] = id; filterText = ""; openModOf(id);
+  gClose(); $("#gsearch").blur(); render();
+  const l = $("#lesson");
+  if (l){ l.scrollIntoView({behavior:"smooth", block:"start"}); l.classList.add("flash"); setTimeout(() => l.classList.remove("flash"), 1200); }
+}
+document.addEventListener("keydown", e => {
+  const inp = $("#gsearch");
+  if (e.target === inp){
+    if (e.key === "ArrowDown"){ e.preventDefault(); gMove(1); }
+    else if (e.key === "ArrowUp"){ e.preventDefault(); gMove(-1); }
+    else if (e.key === "Enter"){ e.preventDefault(); if (gHits[gAct]) gOpen(gHits[gAct].r.id); }
+    else if (e.key === "Escape"){ if ($("#gres").hidden) inp.value = ""; gClose(); }
+    return;
+  }
+  if (e.key === "/" && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)){ e.preventDefault(); inp.focus(); inp.select(); }
+});
+document.addEventListener("focusin", e => { if (e.target.id === "gsearch"){ $("#gkbd").hidden = true; if (e.target.value.trim()) gRender(); } });
+document.addEventListener("focusout", e => { if (e.target.id === "gsearch") $("#gkbd").hidden = !!e.target.value; });
+document.addEventListener("click", e => {
+  const g = e.target.closest("[data-goto]"); if (g){ gOpen(g.dataset.goto); return; }
+  if (!e.target.closest(".gsearch")) gClose();
+});
+
+function openModOf(id){ const x = IDX[id]; if (x) S.openMods[x.pk+'|'+x.mi] = 1; }
+document.addEventListener("toggle", e => {
+  const d = e.target; if (!d.matches || !d.matches("details.mod") || filterText.trim()) return;
+  if (d.open) S.openMods[d.dataset.mod] = 1; else delete S.openMods[d.dataset.mod];
+}, true);
+
+paintThemeBtn();
+render();
+})();
+</script>
+
